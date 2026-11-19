@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://ageofwar-kr.github.io/sitemap.xml
