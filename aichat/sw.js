@@ -1,0 +1,65 @@
+/* AI 단톡방 v1.4 — 서비스워커
+   원칙: 네트워크 우선. 새 버전을 바로 받아 오고, 끊겼을 때만 저장해 둔 화면을 쓴다.
+   · 앱 셸(HTML·CSS·JS·아이콘)만 캐시한다. 대화는 Firebase 실시간 DB가 원본이라 캐시하지 않는다.
+   · 같은 출처(same-origin) GET 요청만 다룬다. Apps Script·Firebase 요청은 그대로 통과시킨다. */
+var CACHE = "aichat-v1.4";
+var SHELL = [
+  "./",
+  "./index.html",
+  "./css/style.css?v=1.4",
+  "./js/room.js?v=1.4",
+  "./js/ai.js?v=1.4",
+  "./js/app.js?v=1.4",
+  "./manifest.json",
+  "./favicon.svg",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./apple-touch-icon.png"
+];
+
+self.addEventListener("install", function (e) {
+  e.waitUntil(
+    caches.open(CACHE).then(function (c) {
+      /* 하나가 실패해도 나머지는 담는다 */
+      return Promise.all(SHELL.map(function (u) {
+        return c.add(new Request(u, { cache: "reload" })).catch(function () {});
+      }));
+    }).then(function () { return self.skipWaiting(); })
+  );
+});
+
+self.addEventListener("activate", function (e) {
+  e.waitUntil(
+    caches.keys().then(function (keys) {
+      return Promise.all(keys.map(function (k) {
+        return k === CACHE ? null : caches.delete(k);
+      }));
+    }).then(function () { return self.clients.claim(); })
+  );
+});
+
+self.addEventListener("fetch", function (e) {
+  var req = e.request;
+  if (req.method !== "GET") return;
+  var url;
+  try { url = new URL(req.url); } catch (err) { return; }
+  if (url.origin !== self.location.origin) return;   /* Firebase·Apps Script 는 손대지 않는다 */
+  var scopePath = new URL(self.registration.scope).pathname;
+  if (url.pathname.indexOf(scopePath) !== 0) return;
+
+  e.respondWith(
+    fetch(req).then(function (res) {
+      if (res && res.ok) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(req, copy).catch(function () {}); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req).then(function (hit) {
+        if (hit) return hit;
+        if (req.mode === "navigate") return caches.match("./index.html");
+        return new Response("", { status: 504, statusText: "offline" });
+      });
+    })
+  );
+});

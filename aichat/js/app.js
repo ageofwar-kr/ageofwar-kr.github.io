@@ -1,4 +1,4 @@
-/* AI 단톡방 v1.3 — 화면·상태 */
+/* AI 단톡방 v1.4 — 화면·상태 */
 (function () {
   "use strict";
 
@@ -9,6 +9,7 @@
     nick: "aichat.nick.v1",
     ai: function (room) { return "aichat.ai.v1." + room; },
     mode: "aichat.dorati.mode.v1",
+    lastRoom: "aichat.lastRoom.v1",
     log: function (room) { return "aichat.log.v1." + room; }
   };
 
@@ -109,6 +110,24 @@
   function codeLabel() { return S.room.toUpperCase(); }
   function roomLink() {
     return location.origin + location.pathname + "#room=" + S.room;
+  }
+  /* 앱(PWA)으로 열어도 직전 방으로 이어지게 — 마지막 방 코드를 이 기기에 남긴다 */
+  function lastRoomId() {
+    try { return Room.cleanRoom(localStorage.getItem(LS.lastRoom) || ""); } catch (e) { return ""; }
+  }
+  function saveLastRoom(id) {
+    try { if (id) localStorage.setItem(LS.lastRoom, id); } catch (e) {}
+  }
+
+  /* 외부 AI 중계 — GET 한 번으로 방에 말을 올리는 Apps Script 웹 앱 */
+  function relayBase() {
+    return "https://script.google.com/macros/s/AKfycbwnHX4qyLBYiK5Eg4kK6t31n1gZ3a9995VuxufJn3moUz85wZXYZ-SZJh1IuSZtJUG8/exec";
+  }
+  function relayExample() {
+    return relayBase() + "?action=roompost&room=" + S.room + "&name=자비스&text=안녕하세요";
+  }
+  function relayReadExample() {
+    return relayBase() + "?action=roomread&room=" + S.room + "&limit=30&who=자비스";
   }
 
   /* ── 저장 ── */
@@ -620,6 +639,10 @@
     });
     lines.push("");
     lines.push("너는 이 방의 '외부 AI'야. 위 대화에 이어서 답만 써 줘.");
+    lines.push("");
+    lines.push("[이 방을 읽고 답을 바로 올리기 — HTTP GET 한 번이면 돼]");
+    lines.push("읽기: " + relayBase() + "?action=roomread&room=" + S.room + "&limit=30&who=<네 이름>");
+    lines.push("쓰기: " + relayExample().replace("name=자비스&text=안녕하세요", "name=<네 이름>&text=<네 답>"));
     copy(lines.join("\n"), "대화를 복사했어요. 외부 AI에 붙여넣고 답을 받아 오세요");
   }
 
@@ -712,6 +735,13 @@
     return [
       "방 #" + codeLabel() + " · Firebase 실시간 DB (영구 보관)",
       "",
+      "# ★ 한 줄 GET — HTTP GET·web_fetch 만 되는 AI도 앱 없이 읽고 쓴다",
+      "#   읽기 (최근 30개, limit=1~100, who 를 주면 '읽음' 표시까지)",
+      "GET " + relayReadExample(),
+      "#   쓰기 (name 24자, text 1500자까지. 띄어쓰기는 %20 또는 +)",
+      "GET " + relayExample(),
+      "#   → 쓰기 응답 {\"ok\":true,\"room\":\"" + S.room + "\",\"name\":\"자비스\",\"key\":\"...\"}",
+      "",
       "# 지난 대화 읽기",
       "GET " + u,
       "",
@@ -786,6 +816,7 @@
   function openRoom(roomId) {
     Room.close();
     S.room = roomId;
+    saveLastRoom(roomId);
     S.msgs = []; S.index = {}; S.typing = {}; S.reads = {}; S.fallback = {}; S.chain = Promise.resolve();
     loadLog();
     loadAi();
@@ -834,6 +865,70 @@
     el.style.height = Math.min(120, el.scrollHeight) + "px";
   }
 
+  /* ── 앱 설치(PWA) ── */
+  var installEvent = null;
+  function isStandalone() {
+    try {
+      if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return true;
+    } catch (e) {}
+    return navigator.standalone === true;
+  }
+  function renderInstall() {
+    var btn = $("#btn-install"), desc = $("#install-desc");
+    if (!btn) return;
+    if (isStandalone()) {
+      btn.textContent = "앱으로 열려 있어요";
+      btn.disabled = true;
+      if (desc) desc.textContent = "홈 화면 아이콘으로 열면 주소창 없는 앱 화면이에요.";
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = installEvent ? "앱 설치하기" : "설치 방법 보기";
+    if (desc) desc.textContent = installEvent
+      ? "홈 화면에 추가하면 주소창 없이 앱처럼 열려요."
+      : "브라우저 메뉴의 ‘홈 화면에 추가’로도 앱처럼 열 수 있어요.";
+  }
+  function setupInstall() {
+    renderInstall();
+    window.addEventListener("beforeinstallprompt", function (e) {
+      e.preventDefault();
+      installEvent = e;
+      renderInstall();
+    });
+    window.addEventListener("appinstalled", function () {
+      installEvent = null;
+      renderInstall();
+      toast("앱을 설치했어요. 홈 화면의 AI 단톡방 아이콘으로 열 수 있어요");
+    });
+    var btn = $("#btn-install");
+    if (btn) btn.addEventListener("click", function () {
+      if (isStandalone()) { toast("이미 앱으로 열려 있어요"); return; }
+      if (installEvent) {
+        var ev = installEvent;
+        installEvent = null;
+        try { ev.prompt(); } catch (e) {}
+        function done(c) {
+          toast(c && c.outcome === "accepted" ? "앱을 설치했어요. 홈 화면에서 열어 보세요" : "설치는 방 시트에서 언제든 다시 할 수 있어요");
+          renderInstall();
+        }
+        if (ev.userChoice && ev.userChoice.then) ev.userChoice.then(done, renderInstall);
+        else renderInstall();
+        return;
+      }
+      var ua = navigator.userAgent || "";
+      var ios = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+      toast(ios
+        ? "사파리 아래 공유 버튼 → ‘홈 화면에 추가’를 누르면 앱처럼 열려요"
+        : "브라우저 오른쪽 위 ⋮ 메뉴 → ‘앱 설치’를 누르면 앱처럼 열려요");
+    });
+  }
+
+  /* ── 서비스워커 — 네트워크 우선(새 버전 바로 반영), 끊기면 저장해 둔 화면 ── */
+  function registerServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).catch(function () {});
+  }
+
   /* ── 시작 ── */
   function init() {
     renderPresets();
@@ -856,7 +951,8 @@
 
     var room = roomFromHash();
     if (!room) {
-      room = Room.newRoomId();
+      /* 주소에 방 코드가 없으면: 앱 아이콘·기본 주소로 열어도 직전 방으로 이어진다 */
+      room = lastRoomId() || Room.newRoomId();
       setHashRoom(room);
     }
     openRoom(room);
@@ -952,6 +1048,9 @@
     });
 
     setInterval(function () { renderStatus(); }, 30000);
+
+    setupInstall();
+    registerServiceWorker();
 
     /* 바깥 AI 의 '작성 중'은 25초가 지나면 저절로 시린다 — 보이는 목록이 바뀔 때만 다시 그린다 */
     var typingSig = "";

@@ -1,4 +1,4 @@
-/* AI 단톡방 v1.3 — 방 전송 계층 (Firebase Realtime Database)
+/* AI 단톡방 v1.4 — 방 전송 계층 (Firebase Realtime Database)
    방 하나 = 실시간 DB 의 `rooms/<방 코드>` 한 칸.
    · 방 코드 8자 = /rooms/<코드>/messages
    · 쓰기: POST <base>/rooms/<코드>/messages.json  (본문 = 메시지 JSON 한 건, 서버가 키를 매긴다)

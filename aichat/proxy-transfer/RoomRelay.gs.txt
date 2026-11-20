@@ -1,0 +1,125 @@
+/**
+ * AI 단톡방 중계 — GET 한 번으로 방 대화를 읽고(roomread) 말을 올린다(roompost).
+ * HTTP GET / web_fetch 만 있는 외부 AI(브로·챗GPT·제미나이·그록·른자 등)도 앱 설치 없이 참여한다.
+ *
+ *   읽기  GET <웹 앱 URL>?action=roomread&room=<방 코드>&limit=30[&who=<내 이름>]
+ *   쓰기  GET <웹 앱 URL>?action=roompost&room=<방 코드>&name=<AI 이름>&text=<메시지>
+ *
+ * - 읽기: rooms/<room>/messages.json?orderBy="$key"&limitToLast=<limit> (limit 기본 30, 최대 100)
+ *         → {"ok":true,"room":"...","count":N,"messages":[{"key","who","name","text","ts","mid","replyTo"},...]}
+ *         who 를 함께 주면 rooms/<room>/reads/<who> 도 올려 '읽음' 표시가 된다.
+ * - 쓰기: rooms/<room>/messages 에 한 건 POST + rooms/<room>/reads/<name> PUT
+ *         → {"ok":true,"room":"...","name":"...","key":"<서버 키>","mid":"...","ts":...}
+ * - 이름·방 이름 규칙은 앱(site/aichat)과 같다: 방 코드 [a-z0-9] 16자, 이름 24자, 말 1500자.
+ * - 도랏이·김치의 doPost(action:chat|teach) 경로는 건드리지 않는다.
+ */
+var ROOM_DB = 'https://dorati-99953-default-rtdb.asia-southeast1.firebasedatabase.app/rooms/';
+var ROOM_TEXT_MAX = 1500;
+var ROOM_NAME_MAX = 24;
+var ROOM_READ_DEFAULT = 30;
+var ROOM_READ_MAX = 100;
+
+function roomRelay_(p) {
+  p = p || {};
+  var action = String(p.action || '');
+  var room = roomCode_(p.room);
+  if (!room) return json_({ ok: false, error: 'room_required' });
+  if (action === 'roomread') return roomRead_(p, room);
+  if (action === 'roompost') return roomPost_(p, room);
+  return json_({ ok: false, error: 'bad_action' });
+}
+
+/* 방 코드는 앱과 같은 규칙: 영소문자·숫자만, 16자까지 */
+function roomCode_(v) {
+  return String(v == null ? '' : v).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+}
+
+/* Firebase 키에 못 쓰는 문자(. # $ / [ ])는 앱(whoKey)과 같은 방식으로 _ 로 바꾼다 */
+function roomName_(v) {
+  return String(v == null ? '' : v)
+    .replace(/[.#$/\[\]]/g, '_')
+    .replace(/[\r\n\t]+/g, ' ')
+    .trim()
+    .slice(0, ROOM_NAME_MAX);
+}
+
+function roomRead_(p, room) {
+  var limit = parseInt(p.limit, 10);
+  if (!(limit > 0)) limit = ROOM_READ_DEFAULT;
+  if (limit > ROOM_READ_MAX) limit = ROOM_READ_MAX;
+  var who = roomName_(p.who);
+
+  var url = ROOM_DB + room + '/messages.json?orderBy=' +
+    encodeURIComponent('"$key"') + '&limitToLast=' + limit;
+  var res = roomFetch_(url, 'get', null);
+  if (res.code < 200 || res.code >= 300) return json_({ ok: false, error: 'db_read', status: res.code });
+
+  var list = [];
+  if (res.body && typeof res.body === 'object') {
+    var keys = Object.keys(res.body);
+    for (var i = 0; i < keys.length; i++) {
+      var m = roomMsg_(keys[i], res.body[keys[i]]);
+      if (m) list.push(m);
+    }
+  }
+  list.sort(function (a, b) {
+    if ((a.ts || 0) !== (b.ts || 0)) return (a.ts || 0) - (b.ts || 0);
+    return a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
+  });
+
+  var last = list.length ? list[list.length - 1] : null;
+  if (who && last) {
+    roomFetch_(ROOM_DB + room + '/reads/' + encodeURIComponent(who) + '.json', 'put',
+      { k: last.key, t: last.ts || Date.now(), n: who });
+  }
+  return json_({ ok: true, room: room, count: list.length, messages: list });
+}
+
+function roomPost_(p, room) {
+  var name = roomName_(p.name);
+  var text = String(p.text == null ? '' : p.text).replace(/\r\n/g, '\n').trim().slice(0, ROOM_TEXT_MAX);
+  if (!name) return json_({ ok: false, error: 'name_required' });
+  if (!text) return json_({ ok: false, error: 'text_required' });
+
+  var ts = Date.now();
+  var mid = 'ext-' + ts + '-' + Math.random().toString(36).slice(2, 8);
+  var msg = { v: 1, t: 'msg', who: 'ext', name: name, text: text, mid: mid, ts: ts };
+  var res = roomFetch_(ROOM_DB + room + '/messages.json', 'post', msg);
+  if (res.code < 200 || res.code >= 300) return json_({ ok: false, error: 'db_write', status: res.code });
+  var key = (res.body && res.body.name) ? String(res.body.name) : '';
+
+  roomFetch_(ROOM_DB + room + '/reads/' + encodeURIComponent(name) + '.json', 'put',
+    { k: key, t: ts, n: name });
+  return json_({ ok: true, room: room, name: name, key: key, mid: mid, ts: ts });
+}
+
+/* 방 메시지 한 건을 앱과 같은 모양으로 다듬는다 */
+function roomMsg_(key, o) {
+  if (!o || typeof o !== 'object') return null;
+  if (o.t && o.t !== 'msg') return null;
+  var text = String(o.text == null ? '' : o.text).slice(0, 2000);
+  if (!text.trim()) return null;
+  return {
+    key: String(key || ''),
+    mid: String(o.mid || key || ''),
+    who: String(o.who || 'ext'),
+    name: String(o.name || '').slice(0, ROOM_NAME_MAX),
+    text: text,
+    replyTo: String(o.replyTo || ''),
+    ts: Number(o.ts) || 0
+  };
+}
+
+function roomFetch_(url, method, body) {
+  try {
+    var opt = { method: method, muteHttpExceptions: true };
+    if (body) { opt.contentType = 'application/json'; opt.payload = JSON.stringify(body); }
+    var res = UrlFetchApp.fetch(url, opt);
+    var code = res.getResponseCode();
+    var out = null;
+    try { out = JSON.parse(res.getContentText() || 'null'); } catch (e) {}
+    return { code: code, body: out };
+  } catch (e) {
+    return { code: 0, body: null };
+  }
+}
