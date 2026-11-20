@@ -739,19 +739,7 @@
       del.className = 'tape-row__del';
       del.textContent = '✕';
       del.setAttribute('aria-label', t.name + ' 테이프 지우기');
-      var armed = 0;
-      del.addEventListener('click', function () {
-        if (!armed) {
-          armed = 1;
-          del.classList.add('is-armed');
-          del.textContent = '삭제?';
-          setTimeout(function () {
-            armed = 0; del.classList.remove('is-armed'); del.textContent = '✕';
-          }, 6000);
-          return;
-        }
-        removeTape(t.id);
-      });
+      del.addEventListener('click', function () { clickSound(true); armDelete(li, t); });
 
       li.appendChild(miniEl(t.style));
       li.appendChild(meta);
@@ -776,6 +764,32 @@
     elShelf.appendChild(addLi);
 
     updateStorageNote();
+  }
+
+  function armDelete(li, tape) {
+    li.classList.add('is-armed');
+    li.innerHTML = '';
+
+    var q = document.createElement('span');
+    q.className = 'tape-row__q';
+    q.textContent = '\u201C' + clip(tape.name, 10) + '\u201D 지울까요?';
+
+    var yes = document.createElement('button');
+    yes.type = 'button';
+    yes.className = 'tape-row__yes';
+    yes.textContent = '삭제';
+    yes.addEventListener('click', function () { removeTape(tape.id); });
+
+    var no = document.createElement('button');
+    no.type = 'button';
+    no.className = 'tape-row__no';
+    no.textContent = '취소';
+    no.addEventListener('click', function () { renderShelf(); });
+
+    li.appendChild(q);
+    li.appendChild(yes);
+    li.appendChild(no);
+    yes.focus({ preventScroll: true });
   }
 
   function updateStorageNote() {
