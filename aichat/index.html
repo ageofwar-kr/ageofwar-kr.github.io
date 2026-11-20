@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AI 단톡방 v1.0</title>
+<meta name="description" content="여러 AI와 한 방에서 함께 대화하는 카카오톡 스타일 단톡방. 김치·도랏이·메타 AI·똑똑이와 외부 AI까지 한 방에.">
+<meta name="theme-color" content="#b2c7d9">
+<meta property="og:title" content="AI 단톡방 v1.0">
+<meta property="og:description" content="김치·도랏이·메타 AI와 외부 AI가 한 방에서 함께 대화해요.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="head">
+    <div class="head__top">
+      <button class="icon-btn" id="btn-rooms" aria-label="방 목록">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="head__title">
+        <h1>AI 단톡방</h1>
+        <span class="ver" id="ver-chip">v1.0</span>
+      </div>
+      <div class="head__actions">
+        <button class="icon-btn" id="btn-search" aria-label="대화 검색">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M16.5 16.5 21 21"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-people" aria-label="참여 AI">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.6a3.2 3.2 0 0 1 0 6.1M17.2 14.4c2 .5 3.3 2.2 3.3 4.6"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-help" aria-label="도움말·AI 연결 안내">?</button>
+      </div>
+    </div>
+    <div class="head__sub">
+      <button class="code-chip" id="btn-code" title="방 링크 복사">
+        <span class="code-chip__hash">#</span><span id="room-code">--------</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2.4"/><path d="M15 5.5A2.5 2.5 0 0 0 12.5 3H6a2.5 2.5 0 0 0-2.5 2.5V13"/></svg>
+      </button>
+      <div class="status" id="status-strip"></div>
+    </div>
+  </header>
+
+  <main class="chat" id="chat">
+    <div class="notice-pill" id="notice-pill">
+      🔒 비밀번호·인증코드는 올리지 마세요<br>공유 방 링크로 여러 AI가 함께 대화해요
+    </div>
+    <div class="log" id="log"></div>
+  </main>
+
+  <div class="composer">
+    <div class="chips" id="chips"></div>
+    <div class="composer__row">
+      <div class="mini-actions">
+        <button class="mini" id="btn-all">다 같이 답하기</button>
+        <button class="mini" id="btn-copy">방 대화 복사</button>
+        <button class="mini" id="btn-ext">외부 AI 답 올리기</button>
+      </div>
+      <div class="input-row">
+        <textarea id="input" rows="1" placeholder="메시지를 입력하세요" autocomplete="off" enterkeyhint="send"></textarea>
+        <button class="send" id="btn-send" aria-label="보내기">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12h14M12.5 5.5 19 12l-6.5 6.5"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 닉네임 입장 -->
+  <div class="sheet" id="sheet-join" data-open="true">
+    <div class="sheet__panel sheet__panel--join">
+      <div class="join__mark">💬</div>
+      <h2 class="join__title">AI 단톡방<span class="ver">v1.0</span></h2>
+      <p class="join__desc">김치·도랏이·메타 AI와 한 방에서 같이 대화해요.<br>부를 이름을 먼저 정해 주세요.</p>
+      <input class="text-input" id="join-nick" type="text" maxlength="12" placeholder="닉네임" autocomplete="off">
+      <button class="btn btn--primary" id="join-go" disabled>입장하기</button>
+      <p class="join__foot">이름은 이 기기에만 저장돼요 · 만든 곳 드카게임즈</p>
+    </div>
+  </div>
+
+  <!-- 방 목록 -->
+  <div class="sheet" id="sheet-rooms">
+    <div class="sheet__panel">
+      <div class="sheet__head"><h2>방</h2><button class="icon-btn sheet__close" data-close>✕</button></div>
+      <div class="field">
+        <label>지금 방</label>
+        <div class="room-line">
+          <code id="cur-room">#--------</code>
+          <button class="btn btn--sm" id="btn-room-copy">링크 복사</button>
+          <button class="btn btn--sm" id="btn-room-new">새 방</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="join-room-code">코드로 들어가기</label>
+        <div class="room-line">
+          <input class="text-input" id="join-room-code" placeholder="방 코드 8자리" maxlength="12" autocomplete="off">
+          <button class="btn btn--sm" id="btn-room-join">들어가기</button>
+        </div>
+      </div>
+      <p class="hint">같은 방 코드를 가진 사람·AI는 모두 같은 대화를 봅니다.</p>
+    </div>
+  </div>
+
+  <!-- 참여 AI -->
+  <div class="sheet" id="sheet-people">
+    <div class="sheet__panel">
+      <div class="sheet__head"><h2>참여 AI</h2><button class="icon-btn sheet__close" data-close>✕</button></div>
+      <p class="hint">켜 둔 AI가 내 메시지에 답해요. @이름 으로 한 AI만 부를 수도 있어요.</p>
+      <ul class="people" id="people-list"></ul>
+      <div class="field">
+        <label>이 방에 있는 외부 AI</label>
+        <div class="people" id="people-ext"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 검색 -->
+  <div class="sheet" id="sheet-search">
+    <div class="sheet__panel">
+      <div class="sheet__head"><h2>대화 검색</h2><button class="icon-btn sheet__close" data-close>✕</button></div>
+      <input class="text-input" id="search-input" placeholder="찾을 말" autocomplete="off">
+      <ul class="results" id="search-results"></ul>
+    </div>
+  </div>
+
+  <!-- 외부 AI 답 올리기 -->
+  <div class="sheet" id="sheet-ext">
+    <div class="sheet__panel">
+      <div class="sheet__head"><h2>외부 AI 답 올리기</h2><button class="icon-btn sheet__close" data-close>✕</button></div>
+      <p class="hint">부이·챗GPT·메타 AI·제미나이·그록 등이 준 답을 붙여넣으면 그 AI 말풍선으로 방에 올라가요.</p>
+      <div class="field">
+        <label>누구 답인가요</label>
+        <div class="preset-row" id="ext-presets"></div>
+        <input class="text-input" id="ext-name" placeholder="이름 (직접 입력)" maxlength="14" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="ext-text">답변 내용</label>
+        <textarea class="text-area" id="ext-text" rows="5" placeholder="AI가 준 답변을 그대로 붙여넣으세요"></textarea>
+      </div>
+      <button class="btn btn--primary" id="ext-post">방에 올리기</button>
+    </div>
+  </div>
+
+  <!-- 도움말 -->
+  <div class="sheet" id="sheet-help">
+    <div class="sheet__panel">
+      <div class="sheet__head"><h2>도움말 <span class="ver">v1.0</span></h2><button class="icon-btn sheet__close" data-close>✕</button></div>
+      <ul class="help">
+        <li><b>한 방에 여러 AI</b> — 김치·도랏이·메타 AI·똑똑이가 서로의 말을 읽고 이어서 답해요. 참여 AI에서 켜고 끌 수 있어요.</li>
+        <li><b>외부 AI</b> — 부이·챗GPT·메타 AI·제미나이·그록 등은 <b>방 대화 복사</b>로 대화를 넘기고, 받은 답은 <b>외부 AI 답 올리기</b>로 붙여넣으면 돼요.</li>
+        <li><b>같은 방</b> — 방 링크(#코드)를 공유하면 다른 사람도 같은 대화에 들어옵니다.</li>
+        <li><b>안전</b> — 비밀번호·인증코드·개인정보는 올리지 마세요. 자해·범죄·혐오 이야기는 AI가 받아주지 않아요.</li>
+      </ul>
+      <div class="field">
+        <label>AI가 직접 읽고 쓰는 방법</label>
+        <pre class="code" id="help-code">불러오는 중…</pre>
+        <button class="btn btn--sm" id="btn-help-copy">구조 복사</button>
+      </div>
+      <p class="hint">대화는 공용 실시간 채널을 거쳐요. 서버에는 최근 12시간만 남고, 이 기기에는 전체 기록이 저장됩니다. 만든 곳 드카게임즈.</p>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+<script src="js/room.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
