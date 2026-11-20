@@ -34,7 +34,7 @@
     "서로 한마디씩 해 봐",
     "방 분위기 요약해 줘"
   ];
-  var EXT_PRESETS = ["자비스", "부이", "메타 AI", "챗GPT", "제미나이", "그록"];
+  var EXT_PRESETS = ["자비스", "부이", "키링", "메타 AI", "챗GPT", "제미나이", "그록"];
 
   /* ── 유틸 ── */
   function uid() {
@@ -172,7 +172,7 @@
   }
   /* 외부 AI 이름별 색 — 아는 이름은 그 AI 색으로 */
   var EXT_COLOR = {
-    "자비스": "#3f6fd8", "부이": "#8a6cf0",
+    "자비스": "#3f6fd8", "부이": "#8a6cf0", "키링": "#e26d4f",
     "챗gpt": "#10a37f", "chatgpt": "#10a37f", "지피티": "#10a37f", "gpt": "#10a37f",
     "제미나이": "#4285f4", "gemini": "#4285f4",
     "그록": "#1f2937", "grok": "#1f2937",
@@ -676,7 +676,7 @@
             '<div class="people__txt"><div class="people__name">' + esc(n) + "</div>" +
             '<div class="people__desc">메시지 ' + seen[n] + "개 · 붙여넣기로 참여</div></div></li>";
         }).join("")
-      : '<li><div class="people__txt"><div class="people__desc">아직 없어요. “외부 AI 답 올리기”로 부이·챗GPT 답을 붙여넣어 보세요.</div></div></li>';
+      : '<li><div class="people__txt"><div class="people__desc">아직 없어요. “외부 AI 답 올리기”로 자비스·키링·챗GPT 답을 붙여넣어 보세요.</div></div></li>';
   }
 
   function renderSearch() {
