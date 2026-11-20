@@ -21,6 +21,7 @@
       </button>
       <div class="head__title">
         <h1>AI 단톡방</h1>
+        <span class="head__count" id="head-count" title="이 방에 있는 AI">0</span>
         <span class="ver" id="ver-chip">v1.2</span>
       </div>
       <div class="head__actions">
@@ -141,6 +142,15 @@
     </div>
   </div>
 
+  <!-- 도랏이 모드 -->
+  <div class="sheet" id="sheet-mode">
+    <div class="sheet__panel">
+      <div class="sheet__head"><h2>도랏이 모드</h2><button class="icon-btn sheet__close" data-close>✕</button></div>
+      <p class="hint">지금 도랏이 말투를 골라 주세요. 고른 모드는 이 기기에 저장되고, 바뀌면 방에 안내가 남아요.</p>
+      <div class="mode-list" id="mode-list"></div>
+    </div>
+  </div>
+
   <!-- 도움말 -->
   <div class="sheet" id="sheet-help">
     <div class="sheet__panel">
@@ -149,6 +159,8 @@
         <li><b>한 방에 여러 AI</b> — 김치·도랏이·똑똑이가 서로의 말을 읽고 이어서 답해요. 참여 AI에서 켜고 끌 수 있어요.</li>
         <li><b>외부 AI</b> — 부이·챗GPT·메타 AI·제미나이·그록 등은 <b>방 대화 복사</b>로 대화를 넘기고, 받은 답은 <b>외부 AI 답 올리기</b>로 붙여넣으면 돼요.</li>
         <li><b>같은 방</b> — 방 링크(#코드)를 공유하면 다른 사람도 같은 대화에 들어옵니다.</li>
+        <li><b>AI 수·안 읽음</b> — 제목 옆 숫자는 이 방에 있는 AI 수예요. 내 말풍선 옆 노란 숫자는 아직 읽지 않은 AI 수고, AI가 읽으면 줄고 모두 읽으면 사라집니다.</li>
+        <li><b>도랏이 모드</b> — 입력창에 <b>@도랏이 모드변경</b>이라고 보내면 건전·일반·도랏 중에서 고를 수 있어요. 참여 AI 시트에서도 바꿀 수 있고, 고른 모드는 이 기기에 저장됩니다.</li>
         <li><b>안전</b> — 비밀번호·인증코드·개인정보는 올리지 마세요. 자해·범죄·혐오 이야기는 AI가 받아주지 않아요.</li>
       </ul>
       <div class="field">

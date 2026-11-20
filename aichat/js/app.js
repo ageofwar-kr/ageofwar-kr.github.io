@@ -8,6 +8,7 @@
   var LS = {
     nick: "aichat.nick.v1",
     ai: function (room) { return "aichat.ai.v1." + room; },
+    mode: "aichat.dorati.mode.v1",
     log: function (room) { return "aichat.log.v1." + room; }
   };
 
@@ -16,7 +17,11 @@
     nick: "",
     msgs: [],
     index: {},
+    reads: {},
+    aiTyping: {},
+    fallback: {},
     active: { kimchi: true, dorati: true, ttok: false },
+    mode: "normal",
     typing: {},
     chain: Promise.resolve(),
     busy: false,
@@ -221,6 +226,12 @@
         lastDay = dk;
         prev = null;
       }
+      /* 시스템 안내(AI 오류 등)는 가운데 알림 줄로 */
+      if (m.who === "sys") {
+        out.push('<div class="sys' + (m.kind === "warn" ? " sys--warn" : "") + '"><span>' + esc(m.text) + '</span></div>');
+        prev = null;
+        return;
+      }
       var same = prev && skey(prev) === skey(m) && (m.ts - prev.ts) < 60000 && dayKey(prev.ts) === dk;
       var me = m.who === "u";
       var cls = "row " + (me ? "row--me" : "row--other") + (same ? " row--cont" : "");
@@ -236,9 +247,10 @@
       /* 한 사람이 이어서 말한 묶음의 마지막 말에만 안 읽음 표시를 붙인다(카톡과 같은 결) */
       var next = S.msgs[i + 1];
       var runEnd = !next || skey(next) !== skey(m) || (next.ts - m.ts) > 60000;
-      if (runEnd) {
-        var n = me ? actives.length : 1;
-        if (n > 0) out.push('<span class="meta__unread">' + n + '</span>');
+      if (runEnd && me) {
+        /* 카톡처럼 내 말에만 안 읽은 AI 수 — 다 읽으면 사라진다 */
+        var n = unreadCount(m);
+        if (n > 0) out.push('<span class="meta__unread">' + (n > 99 ? "99+" : n) + '</span>');
       }
       out.push('</div></div></div>');
       prev = m;
@@ -256,9 +268,21 @@
       );
     });
 
+    /* 바깥 AI 가 /typing/<이름> 을 켜 둔 동안도 점 세 개로 보여 준다 */
+    extTyping().forEach(function (t) {
+      var pp = { who: "ext", name: t.name };
+      out.push(
+        '<div class="row row--other typing">' +
+        avatarHTML(pp, false) +
+        '<div class="bubble-wrap"><div class="who">' + esc(t.name) + '</div>' +
+        '<div class="bubble"><span class="dots"><i></i><i></i><i></i></span></div></div></div>'
+      );
+    });
+
     log.innerHTML = out.join("");
     if (atBottom) scrollBottom();
     renderStatus();
+    renderHead();
     $("#btn-all").disabled = !lastUserMsg() || !actives.length;
   }
 
@@ -269,14 +293,47 @@
 
   function renderStatus() {
     var parts = [];
+    var lu = lastUserMsg();
     activeIds().forEach(function (id) {
       var p = AI.get(id);
-      var last = lastFrom(id);
-      parts.push("<b>" + esc(p.name) + "</b> " + (last ? ago(last.ts) : "대기"));
+      var st;
+      if (S.typing[id]) st = '<i class="st st--write">작성 중</i>';
+      else if (lu && hasRead(id, lu)) st = '<i class="st st--read">읽음</i>';
+      else if (lu) st = '<i class="st st--unread">안 읽음</i>';
+      else {
+        var last = lastFrom(id);
+        st = last ? ago(last.ts) : "대기";
+      }
+      parts.push("<b>" + esc(p.name) + "</b> " + st);
+    });
+    extTyping().forEach(function (t) {
+      parts.push("<b>" + esc(t.name) + "</b> <i class=\"st st--write\">작성 중</i>");
     });
     var extLast = lastFromExt();
-    if (extLast) parts.push("<b>" + esc(extLast.name) + "</b> " + ago(extLast.ts));
+    if (extLast && !extTyping().length) parts.push("<b>" + esc(extLast.name) + "</b> " + ago(extLast.ts));
     $("#status-strip").innerHTML = (S.link === "live" ? "" : "연결 중 · ") + (parts.join(" · ") || "AI를 켜 주세요");
+  }
+
+  /* ── 외부 AI 참여 상태 ── */
+  var TYPING_TTL = 25000;
+  function whoKey(name) { return String(name || "").replace(/[.#$/\[\]]/g, "_").slice(0, 24) || "ai"; }
+  function extTyping() {
+    var out = [];
+    Object.keys(S.aiTyping).forEach(function (k) {
+      var v = S.aiTyping[k];
+      if (!v || !v.t) return;
+      if (Date.now() - v.t > TYPING_TTL) return;
+      out.push({ key: k, name: v.n || k, t: v.t });
+    });
+    return out;
+  }
+  function extReaders() {
+    var out = [];
+    Object.keys(S.reads).forEach(function (k) {
+      if (AI.get(k)) return;               /* 내장 AI 는 따로 센다 */
+      out.push(k);
+    });
+    return out;
   }
 
   function lastFrom(id) {
@@ -293,6 +350,73 @@
   }
   function activeIds() {
     return AI.list.filter(function (p) { return S.active[p.id]; }).map(function (p) { return p.id; });
+  }
+
+  /* 방에 들어와 있는 AI 수 — 켜 둔 내장 AI + 최근 이 방에서 말한 외부 AI */
+  function extNames() {
+    var seen = {}, out = [];
+    function add(n) {
+      n = String(n || "");
+      if (!n || seen[n]) return;
+      seen[n] = 1; out.push(n);
+    }
+    S.msgs.forEach(function (m) {
+      if (m.who === "ext") add(m.name || "외부 AI");
+    });
+    Object.keys(S.reads).forEach(function (k) { if (!AI.get(k)) add(S.reads[k].n || k); });
+    Object.keys(S.aiTyping).forEach(function (k) { add(S.aiTyping[k].n || k); });
+    return out;
+  }
+  function roomAiCount() { return activeIds().length + extNames().length; }
+  function renderHead() {
+    var el = $("#head-count");
+    if (!el) return;
+    var n = roomAiCount();
+    el.textContent = n ? String(n) : "";
+    el.title = "이 방에 있는 AI " + n + "명";
+  }
+  function unreadCount(m) {
+    var ids = activeIds().concat(extReaders()), n = 0;
+    for (var i = 0; i < ids.length; i++) if (!hasRead(ids[i], m)) n++;
+    return n;
+  }
+
+  /* ── 읽음 표시 (카톡 안 읽음 숫자) ── */
+  function findMsg(mid) {
+    for (var i = S.msgs.length - 1; i >= 0; i--) if (S.msgs[i].mid === mid) return S.msgs[i];
+    return null;
+  }
+  function lastMsg() { return S.msgs.length ? S.msgs[S.msgs.length - 1] : null; }
+  /* 이 AI가 이 말을 읽었는가 — 서버 키(시간 순서)를 먼저 보고, 없으면 시각으로 본다 */
+  function hasRead(id, m) {
+    var r = S.reads[id];
+    if (!r || !m) return false;
+    if (m.key && r.k && m.key <= r.k) return true;
+    if (r.t && m.ts && r.t >= m.ts) return true;
+    return false;
+  }
+  function unreadCount(m) {
+    var ids = activeIds().concat(extReaders()), n = 0;
+    for (var i = 0; i < ids.length; i++) if (!hasRead(ids[i], m)) n++;
+    return n;
+  }
+  function mergeReads(map) {
+    var changed = false;
+    Object.keys(map || {}).forEach(function (k) {
+      var cur = S.reads[k], nx = map[k];
+      if (!nx) return;
+      if (!cur || cur.t !== nx.t || cur.k !== nx.k) { S.reads[k] = nx; changed = true; }
+    });
+    return changed;
+  }
+  /* AI가 말을 읽기 시작한 순간 그 AI의 읽음 시점을 올린다 → 말풍선 옆 숫자가 줄어든다 */
+  function markAiRead(who) {
+    var last = lastMsg();
+    if (!who || !last) return;
+    Room.markRead(S.room, who, last).then(function (v) {
+      S.reads[who] = v;
+      render();
+    }).catch(function () {});
   }
 
   /* ── 답변 흐름 ── */
@@ -316,26 +440,35 @@
     return Room.send(S.room, payload);
   }
 
+  function applySendResult(mid, ev) {
+    if (!ev || !mid) return;
+    for (var i = 0; i < S.msgs.length; i++) {
+      if (S.msgs[i].mid !== mid) continue;
+      var changed = false;
+      if (ev.key && !S.msgs[i].key) { S.msgs[i].key = ev.key; changed = true; }
+      if (ev.time && !S.msgs[i].stamped) { S.msgs[i].ts = ev.time * 1000; S.msgs[i].stamped = 1; changed = true; }
+      if (changed) { saveLog(); render(); }
+      return;
+    }
+  }
+
   function oneReply(who, trigger) {
     var p = AI.get(who);
     if (!p) return Promise.resolve();
+    var eff = AI.withMode(p, S.mode);       /* 도랏이 모드(건전·일반·도랏) 반영 */
     return sleep(650 + Math.random() * 350).then(function () {
       if (hasReply(who, trigger.mid)) return;       /* 다른 기기·창이 먼저 답했으면 건너뛴다 */
       S.typing[who] = 1;
       render();
-      return AI.reply(p, { text: trigger.text, nick: S.nick, history: buildHistory(trigger.mid) })
+      markAiRead(who);                             /* 읽었으니 말풍선 옆 안 읽음 숫자가 줄어든다 */
+      return AI.reply(eff, { text: trigger.text, nick: S.nick, history: buildHistory(trigger.mid) })
         .then(function (txt) {
           delete S.typing[who];
-          if (!txt) { render(); return; }
+          if (!txt) { render(); fallback(who, p.name, trigger); return; }
           var item = { mid: uid(), who: who, name: p.name, text: txt, replyTo: trigger.mid, ts: Date.now() };
           if (addMsg(item)) { render(); }
           return publish(item).then(function (ev) {
-            if (ev && ev.time) {
-              for (var i = 0; i < S.msgs.length; i++) {
-                if (S.msgs[i].mid === item.mid) { S.msgs[i].ts = ev.time * 1000; break; }
-              }
-              saveLog(); render();
-            }
+            applySendResult(item.mid, ev);
           }).catch(function (e) {
             if (e && e.message === "limit") toast("오늘 보낼 수 있는 양을 넘었어요. 내일 다시 이어 주세요");
           });
@@ -343,9 +476,70 @@
         .catch(function () {
           delete S.typing[who];
           render();
-          toast(p.name + "가 잠시 답을 못 했어요. 다시 불러 주세요");
+          fallback(who, p.name, trigger);
         });
     });
+  }
+
+  /* ── AI 오류 폴백 ──
+     한 AI가 응답에 실패하면 방에 안내를 남기고 @all 로 남은 AI에게 바로 넘긴다.
+     같은 발화에 대해 폴백은 딱 한 번만 — 무한 루프 방지 가드. */
+  function postSystem(text, replyTo, kind) {
+    var item = { mid: uid(), who: "sys", name: "안내", kind: kind || "info", text: String(text).slice(0, 500), replyTo: replyTo || "", ts: Date.now() };
+    if (addMsg(item)) render();
+    Room.send(S.room, { v: 1, t: "msg", who: "sys", name: "안내", kind: item.kind, text: item.text, mid: item.mid, replyTo: item.replyTo, ts: item.ts })
+      .then(function (ev) { applySendResult(item.mid, ev); })
+      .catch(function () {});
+    return item;
+  }
+
+  /* ── 도랏이 모드 ── */
+  function wantsModeChange(text) {
+    var t = String(text || "");
+    if (!/@\s*도랏이/.test(t)) return false;
+    return /모드\s*(변경|바꿔|바꾸|변경해|바꿈)/.test(t) || /모드\s*(좀\s*)?(고르|선택)/.test(t);
+  }
+  function renderModeSheet() {
+    var p = AI.get("dorati");
+    var list = AI.modeList(p);
+    $("#mode-list").innerHTML = list.map(function (m) {
+      return '<button class="mode-card" data-mode="' + m.key + '"' + (S.mode === m.key ? ' data-on="1"' : '') + '>' +
+        '<span class="mode-card__label">' + esc(m.label) + '</span>' +
+        '<span class="mode-card__desc">' + esc(m.desc) + '</span>' +
+        (S.mode === m.key ? '<span class="mode-card__now">지금</span>' : '') +
+        '</button>';
+    }).join("");
+    $$("#mode-list [data-mode]").forEach(function (b) {
+      b.addEventListener("click", function () { setDoratiMode(b.getAttribute("data-mode")); });
+    });
+  }
+  function openModeSheet() {
+    renderModeSheet();
+    sheet("#sheet-mode", true);
+  }
+  function setDoratiMode(m) {
+    var p = AI.get("dorati");
+    if (!p || !p.modes || !p.modes[m]) return;
+    var same = S.mode === m;
+    S.mode = m;
+    try { localStorage.setItem(LS.mode, m); } catch (e) {}
+    sheet("#sheet-mode", false);
+    renderModeSheet();
+    if (!same) postSystem("도랏이 모드가 [" + p.modes[m].label + "]으로 바뀌었어요");
+    toast("도랏이 " + p.modes[m].label + " 모드로 바꿨어요");
+  }
+
+  function fallback(who, name, trigger) {
+    if (!trigger || !trigger.mid) return;
+    if (S.fallback[trigger.mid]) return;          /* 가드: 같은 말에 두 번은 안 한다 */
+    S.fallback[trigger.mid] = 1;
+    var others = activeIds().filter(function (id) { return id !== who && !hasReply(id, trigger.mid); });
+    var tail = others.length
+      ? " 다른 AI가 대신 받아쳐 주세요!"
+      : " 지금 켜 둔 다른 AI가 없어서 잠시 뒤 다시 불러 주셔야 해요.";
+    postSystem("[오류 안내] @all " + name + "가 잠깐 응답에 실패했어요." + tail, trigger.mid, "warn");
+    toast(name + "가 잠시 답을 못 했어요" + (others.length ? ". 다른 AI에게 넘겼어요" : ""));
+    if (others.length) replyFlow(trigger, others);
   }
 
   function replyFlow(trigger, ids) {
@@ -370,6 +564,15 @@
     var text = input.value.trim();
     if (!text || !S.room) return;
     if (!S.nick) { openJoin(); return; }
+
+    /* "@도랏이 모드변경" 처럼 보내면 도랏이 모드 창을 띄운다 */
+    if (wantsModeChange(text)) {
+      input.value = "";
+      autosize();
+      openModeSheet();
+      return;
+    }
+
     var mid = uid();
     var item = { mid: mid, who: "u", name: S.nick, text: text.slice(0, 1000), ts: Date.now() };
     input.value = "";
@@ -378,15 +581,8 @@
     render();
     scrollBottom();
 
-    Room.send(S.room, { v: 1, t: "msg", who: "u", name: S.nick, text: item.text, mid: mid, ts: Date.now() })
-      .then(function (ev) {
-        if (ev && ev.time) {
-          for (var i = 0; i < S.msgs.length; i++) {
-            if (S.msgs[i].mid === mid) { S.msgs[i].ts = ev.time * 1000; break; }
-          }
-          saveLog(); render();
-        }
-      })
+    Room.send(S.room, { v: 1, t: "msg", who: "u", name: S.nick, text: item.text, mid: mid, ts: item.ts })
+      .then(function (ev) { applySendResult(mid, ev); })
       .catch(function (e) {
         toast(e && e.message === "limit"
           ? "오늘 보낼 수 있는 양을 넘었어요. 잠시 뒤 다시 시도해 주세요"
@@ -396,6 +592,11 @@
     var ids = targetsFor(text);
     if (ids.length) replyFlow({ mid: mid, text: item.text }, ids);
     else if (!activeIds().length) toast("답할 AI가 꺼져 있어요. 참여 AI에서 켜 주세요");
+    /* 답하지 않는 AI도 방에 있으니 그 말을 본다 — 잠시 뒤 안 읽음 숫자가 줄어든다 */
+    activeIds().forEach(function (id) {
+      if (ids.indexOf(id) >= 0) return;        /* 답하는 AI는 답변을 시작할 때 읽음 처리한다 */
+      setTimeout(function () { if (S.room) markAiRead(id); }, 1400 + Math.random() * 900);
+    });
   }
 
   function replyAll() {
@@ -433,16 +634,36 @@
   function renderPeople() {
     var ul = $("#people-list");
     ul.innerHTML = AI.list.map(function (p) {
+      var modes = AI.modeList(p);
+      var desc = p.modes && p.modes[S.mode] ? p.modes[S.mode].desc : p.desc;
+      var chips = modes.length
+        ? '<div class="modes">' + modes.map(function (m) {
+            return '<button class="mode" data-mode="' + m.key + '"' + (S.mode === m.key ? ' data-on="1"' : '') +
+              ' title="' + esc(m.desc) + '">' + esc(m.label) + '</button>';
+          }).join("") + "</div>"
+        : "";
       return '<li>' + avatarHTML({ who: p.id }, false) +
         '<div class="people__txt"><div class="people__name">' + esc(p.name) + "</div>" +
-        '<div class="people__desc">' + esc(p.desc) + "</div></div>" +
-        '<label class="switch"><input type="checkbox" data-ai="' + p.id + '"' + (S.active[p.id] ? " checked" : "") + "><span></span></label></li>";
+        '<div class="people__desc">' + esc(desc) + "</div></div>" +
+        '<label class="switch"><input type="checkbox" data-ai="' + p.id + '"' + (S.active[p.id] ? " checked" : "") + "><span></span></label>" +
+        chips + "</li>";
     }).join("");
     ul.querySelectorAll("input[data-ai]").forEach(function (el) {
       el.addEventListener("change", function () {
         S.active[el.getAttribute("data-ai")] = el.checked;
         saveAi();
         render();
+      });
+    });
+    ul.querySelectorAll("[data-mode]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var m = b.getAttribute("data-mode");
+        var p = AI.get("dorati");
+        if (!p || !p.modes || !p.modes[m]) return;
+        S.mode = m;
+        try { localStorage.setItem(LS.mode, m); } catch (e) {}
+        renderPeople();
+        toast("도랏이 " + p.modes[m].label + " 모드로 바꿨어요");
       });
     });
 
@@ -502,7 +723,16 @@
       '{"v":1,"t":"msg","who":"ext","name":"자비스","text":"안녕하세요","mid":"j-001","ts":' + Date.now() + '}',
       "",
       "# 받는 모양 ({서버키: 메시지}) — 키는 POST 응답의 name",
-      '{"-NxAbC":{"v":1,"t":"msg","who":"u|kimchi|dorati|ttok|ext","name":"김치","text":"...","mid":"m-001","replyTo":"","ts":1763600000000}}'
+      '{"-NxAbC":{"v":1,"t":"msg","who":"u|kimchi|dorati|ttok|ext","name":"김치","text":"...","mid":"m-001","replyTo":"","ts":1763600000000}}',
+      "",
+      "# 읽음 표시 (외부 AI가 답할 때 한 번 PUT)",
+      "PUT " + Room.readUrl(S.room, "자비스"),
+      '{"k":"<마지막으로 읽은 메시지 키>","t":' + Date.now() + ',"n":"자비스"}',
+      "",
+      "# 작성 중 점 세 개 (쓰는 동안 PUT, 끝나면 DELETE)",
+      "PUT " + Room.typingKeyUrl(S.room, "자비스"),
+      '{"t":' + Date.now() + ',"n":"자비스"}',
+      "DELETE " + Room.typingKeyUrl(S.room, "자비스")
     ].join("\n");
   }
 
@@ -539,10 +769,13 @@
       $("#ext-text").value = "";
       closeSheets();
       toast(name + " 답을 올렸어요");
-      if (ev && ev.time) {
-        for (var i = 0; i < S.msgs.length; i++) if (S.msgs[i].mid === item.mid) { S.msgs[i].ts = ev.time * 1000; break; }
-        saveLog(); render();
-      }
+      applySendResult(item.mid, ev);
+      /* 답을 올렸으니 그 AI가 방을 읽은 것으로 표시 — 안 읽음 숫자가 줄어든다 */
+      var key = whoKey(name);
+      Room.markRead(S.room, key, item, name).then(function (v) {
+        S.reads[key] = v;
+        render();
+      }).catch(function () {});
     }).catch(function (e) {
       $("#ext-post").disabled = false;
       toast(e && e.message === "limit" ? "오늘 보낼 수 있는 양을 넘었어요" : "올리지 못했어요. 연결을 확인해 주세요");
@@ -553,7 +786,7 @@
   function openRoom(roomId) {
     Room.close();
     S.room = roomId;
-    S.msgs = []; S.index = {}; S.typing = {}; S.chain = Promise.resolve();
+    S.msgs = []; S.index = {}; S.typing = {}; S.reads = {}; S.fallback = {}; S.chain = Promise.resolve();
     loadLog();
     loadAi();
     $("#room-code").textContent = codeLabel();
@@ -567,6 +800,18 @@
     }, function (st) {
       S.link = st;
       renderStatus();
+    }, function (map) {
+      if (mergeReads(map)) { render(); }
+    }, function (map) {
+      var changed = false;
+      Object.keys(map || {}).forEach(function (k) {
+        var cur = S.aiTyping[k], nx = map[k];
+        if (!nx) return;
+        if (cur && cur.t === nx.t && cur.n === nx.n) return;
+        if (nx.t) S.aiTyping[k] = nx; else delete S.aiTyping[k];
+        changed = true;
+      });
+      if (changed) render();
     });
   }
   function scrollBottomIfNear() {
@@ -603,6 +848,11 @@
     });
 
     try { S.nick = (localStorage.getItem(LS.nick) || "").trim(); } catch (e) {}
+    try {
+      var mo = localStorage.getItem(LS.mode);
+      var dp = AI.get("dorati");
+      if (mo && dp && dp.modes && dp.modes[mo]) S.mode = mo;
+    } catch (e) {}
 
     var room = roomFromHash();
     if (!room) {
@@ -702,6 +952,13 @@
     });
 
     setInterval(function () { renderStatus(); }, 30000);
+
+    /* 바깥 AI 의 '작성 중'은 25초가 지나면 저절로 시린다 — 보이는 목록이 바뀔 때만 다시 그린다 */
+    var typingSig = "";
+    setInterval(function () {
+      var sig = extTyping().map(function (t) { return t.key; }).sort().join(",");
+      if (sig !== typingSig) { typingSig = sig; render(); }
+    }, 1500);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

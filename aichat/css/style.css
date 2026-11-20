@@ -47,6 +47,8 @@ input,textarea{font:inherit;color:inherit}
 .head__top{display:flex;align-items:center;gap:8px;padding:9px 10px 6px}
 .head__title{display:flex;align-items:baseline;gap:6px;min-width:0;flex:1}
 .head__title h1{margin:0;font-size:16px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head__count{font-size:13px;font-weight:700;color:#7d8c99;flex:0 0 auto}
+.head__count:empty{display:none}
 .ver{font-size:10px;font-weight:700;color:#5f6f7d;background:#e4ebf1;border-radius:6px;padding:2px 5px;letter-spacing:.2px}
 .head__actions{display:flex;gap:2px}
 .icon-btn{
@@ -70,6 +72,10 @@ input,textarea{font:inherit;color:inherit}
   flex:1 1 auto;min-width:0;font-size:11px;color:#63727f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .status b{font-weight:700;color:#3f4d5a}
+.status .st{font-style:normal;font-weight:700}
+.status .st--read{color:#1d7a4d}
+.status .st--unread{color:#b8730a}
+.status .st--write{color:#2f7fb8}
 
 /* ── 대화 ── */
 .chat{
@@ -101,6 +107,7 @@ input,textarea{font:inherit;color:inherit}
   background:rgba(255,255,255,.5);color:#51606e;font-size:11px;line-height:1.5;
   border-radius:12px;padding:6px 12px;max-width:88%;text-align:center;
 }
+.sys--warn span{background:rgba(255,244,219,.95);color:#8a5c00;border:1px solid rgba(196,138,0,.22)}
 
 .row{display:flex;gap:8px;margin:0 0 8px;align-items:flex-start;max-width:100%}
 .row--me{flex-direction:row-reverse}
@@ -139,15 +146,24 @@ input,textarea{font:inherit;color:inherit}
   font-size:10px;color:#5f7183;line-height:1;
 }
 .row--me .meta{align-items:flex-end}
-.meta__unread{font-weight:800;color:#8494a3;letter-spacing:-.3px}
+.meta__unread{
+  font-weight:800;letter-spacing:-.3px;font-size:9.5px;line-height:1;
+  color:#7d5600;background:rgba(254,229,0,.88);border-radius:999px;
+  padding:1.5px 4.5px;min-width:14px;text-align:center;
+  box-shadow:0 1px 1px rgba(120,90,0,.14);
+}
 
 /* 말하는 중 */
-.typing .bubble{padding:11px 13px}
-.dots{display:inline-flex;gap:3px;align-items:center}
-.dots i{width:5px;height:5px;border-radius:50%;background:#b9c4ce;display:block;animation:bob 1s infinite ease-in-out}
-.dots i:nth-child(2){animation-delay:.15s}
-.dots i:nth-child(3){animation-delay:.3s}
-@keyframes bob{0%,80%,100%{transform:translateY(0);opacity:.55}40%{transform:translateY(-3px);opacity:1}}
+.typing .bubble{padding:12px 14px;display:flex;align-items:center;min-height:38px}
+.dots{display:inline-flex;gap:4px;align-items:center;height:14px}
+.dots i{width:6px;height:6px;border-radius:50%;background:#95a5b3;display:block;animation:dotBob 1.15s infinite cubic-bezier(.24,.72,.36,1)}
+.dots i:nth-child(2){animation-delay:.16s}
+.dots i:nth-child(3){animation-delay:.32s}
+@keyframes dotBob{
+  0%,60%,100%{transform:translateY(0) scale(.72);opacity:.35}
+  30%{transform:translateY(-4px) scale(1);opacity:1}
+}
+@media (prefers-reduced-motion:reduce){.dots i{animation-duration:1.8s}}
 
 /* ── 입력부 ── */
 .composer{flex:0 0 auto;background:#eef3f7;border-top:1px solid rgba(16,20,24,.07);padding:8px 10px calc(8px + var(--safe))}
@@ -244,7 +260,24 @@ input,textarea{font:inherit;color:inherit}
 .hint{margin:0 0 12px;font-size:11.5px;line-height:1.55;color:#7d8b99}
 
 .people{list-style:none;margin:0 0 12px;padding:0}
-.people li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f3f6}
+.people li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f0f3f6;flex-wrap:wrap}
+.modes{flex:0 0 100%;display:flex;gap:6px;margin:2px 0 2px 42px}
+.mode{
+  border:1px solid var(--line);background:#fff;border-radius:999px;
+  padding:5px 11px;font-size:11.5px;color:#3f4d5a;line-height:1.2;
+  transition:background .15s ease,border-color .15s ease;
+}
+.mode[data-on]{background:#fee500;border-color:#f0d800;color:#3a2f00;font-weight:800}
+.mode-list{display:flex;flex-direction:column;gap:8px;margin:4px 0 2px}
+.mode-card{
+  display:flex;align-items:center;gap:10px;text-align:left;
+  border:1px solid var(--line);background:#fff;border-radius:12px;
+  padding:11px 13px;width:100%;
+}
+.mode-card__label{font-size:13.5px;font-weight:800;color:#2f3d49;flex:0 0 38px}
+.mode-card__desc{font-size:11.5px;color:#7d8b99;flex:1 1 auto;min-width:0}
+.mode-card__now{font-size:10px;font-weight:800;color:#8a6100;background:rgba(254,229,0,.9);border-radius:999px;padding:2px 7px}
+.mode-card[data-on]{border-color:#f0d800;background:#fffbe0}
 .people li:last-child{border-bottom:0}
 .people .avatar{width:32px;height:32px;font-size:11px}
 .people__txt{flex:1 1 auto;min-width:0}
