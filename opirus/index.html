@@ -373,8 +373,9 @@
     </header>
     <div class="sheet__body">
       <h3>테이프 만들기</h3>
-      <p><b>SEL</b>로 테이프 함을 열고 <b>새 테이프 만들기</b>를 고르세요. 이름과 라벨을 정하고 폰에 저장된 음원을 담으면 카세트 테이프 한 개가 완성됩니다.</p>
-      <p>만든 테이프는 <b>이 기기 브라우저(IndexedDB)</b>에 저장되어, 앱을 다시 열어도 그대로 남아 있습니다. 용량은 담은 음원 크기만큼만 씁니다.</p>
+      <p><b>SEL</b>로 테이프 함을 여세요. 기본으로 <b>클래식 50곡 · 트로트 · 긴 뽕짝</b> 빈 테이프가 들어 있습니다. <b>＋ 곡 넣기</b>를 누르면 폰의 음원을 여러 개(50곡 이상도) 한 번에 골라 담을 수 있습니다.</p>
+      <p>이름과 라벨 색을 직접 정해 <b>새 테이프 만들기</b>도 가능합니다. 한 곡짜리 긴 파일(1시간 메들리 등)도, 여러 곡도 똑같이 하나의 테이프에 담깁니다.</p>
+      <p>만든 테이프는 <b>이 기기 브라우저(IndexedDB)</b>에 저장되어, 앱을 다시 열어도 그대로 남아 있습니다. 많은 곡은 한 파일씩 차례로 저장하며 <b>저장 중... 12/50</b>처럼 진행률을 보여 줍니다.</p>
       <p>삼성 뮤직 같은 음악 앱과 직접 연결할 수는 없습니다. 폰에 저장된 음원 파일을 골라 담는 방식이고, 고른 음원은 어디에도 업로드되지 않습니다.</p>
 
       <h3>테이프 넣기 · 꺼내기</h3>
@@ -418,6 +419,11 @@
 
 <input type="file" id="file" accept="audio/*" multiple hidden>
 <audio id="audio" preload="metadata"></audio>
+
+<div class="savebar" id="savebar" hidden>
+  <div class="savebar__bar"><i id="savebar-fill"></i></div>
+  <span id="savebar-text">저장 중... 0/0</span>
+</div>
 <script src="js/app.js?v=1.0"></script>
 </body>
 </html>

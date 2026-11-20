@@ -1,6 +1,7 @@
 /* 오피러스 카세트 v1.0 — 후석 7inch LCD MONITOR 감성 카세트 플레이어
-   · 테이프(이름·라벨·음원 묶음)를 만들어 IndexedDB에 보관하고, 덱에 넣고 꺼낸다.
-   · 음원은 브라우저 메모리의 객체 URL로만 다루고, 저장도 이 기기 안(IndexedDB)에만 한다.
+   · 테이프(이름·라벨·음원 목록)를 만들어 이 기기(IndexedDB)에 보관하고, 덱에 넣고 꺼낸다.
+   · 음원은 파일 하나당 한 번씩 차례로 저장하고 진행률을 보여 준다(대용량·다수 파일에서도 멈추지 않게).
+   · 재생은 현재 곡의 Blob만 꺼내 객체 URL로 만든다(목록만 먼저 읽어 메모리를 아낀다).
    · 화면(모니터)·소리(audio)·잠금화면(mediaSession)을 한 상태(S)로 묶어 관리한다. */
 (function () {
   'use strict';
@@ -52,6 +53,10 @@
   var elNewList = $('#new-list');
   var elNewSave = $('#new-save');
 
+  var saveBar = $('#savebar');
+  var saveFill = $('#savebar-fill');
+  var saveText = $('#savebar-text');
+
   /* ───────── 상태 ───────── */
   var STYLES = {
     cream: { label: '크림', bg: '#e0d8c4', ink: '#5a5344', line: 'rgba(96,86,66,.45)', mini: '#e0d8c4' },
@@ -60,6 +65,12 @@
     blue:  { label: '블루', bg: '#2f4f7a', ink: '#e4edf9', line: 'rgba(216,231,251,.38)', mini: '#2f4f7a' },
     green: { label: '그린', bg: '#3c6b48', ink: '#e8f2de', line: 'rgba(226,241,216,.38)', mini: '#3c6b48' }
   };
+
+  var DEFAULTS = [
+    { name: '클래식 50곡', style: 'gold' },
+    { name: '트로트', style: 'red' },
+    { name: '긴 뽕짝', style: 'blue' }
+  ];
 
   var S = {
     tapes: [],
@@ -76,6 +87,8 @@
     newStyle: 'cream',
     idbOk: true,
     busy: false,
+    curUrl: null,
+    loadToken: 0,
     insertTimer: []
   };
 
@@ -88,8 +101,9 @@
   function fmt(t) {
     if (!isFinite(t) || t < 0) return '--:--';
     t = Math.floor(t);
-    var m = Math.floor(t / 60), s = t % 60;
-    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    var h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+    var mm = (m < 10 ? '0' : '') + m, ss = (s < 10 ? '0' : '') + s;
+    return h > 0 ? h + ':' + mm + ':' + ss : mm + ':' + ss;
   }
 
   function bytes(n) {
@@ -98,6 +112,8 @@
     if (n < 1024 * 1024 * 1024) return (n / 1024 / 1024).toFixed(n < 10 * 1024 * 1024 ? 1 : 0) + 'MB';
     return (n / 1024 / 1024 / 1024).toFixed(2) + 'GB';
   }
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
 
   function cleanName(name) {
     return name.replace(/\.[a-z0-9]{2,5}$/i, '').replace(/_/g, ' ').trim() || name;
@@ -109,12 +125,10 @@
   }
 
   function uid() {
-    return 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
-  function wait(ms) {
-    return new Promise(function (r) { setTimeout(r, ms); });
-  }
+  function tick() { return new Promise(function (r) { setTimeout(r, 0); }); }
 
   function hint(msg, ms) {
     elHint.textContent = msg;
@@ -124,7 +138,7 @@
 
   function tickClock() {
     var d = new Date();
-    elClock.textContent = d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+    elClock.textContent = d.getHours() + ':' + pad2(d.getMinutes());
   }
 
   /* ───────── 버튼 딸깍 소리 ───────── */
@@ -187,9 +201,7 @@
     srcTape.classList.toggle('is-on', !!tape);
   }
 
-  function flap(on) {
-    mouth.classList.toggle('is-open', !!on);
-  }
+  function flap(on) { mouth.classList.toggle('is-open', !!on); }
 
   function osd(text, ms) {
     osdEl.textContent = text || '';
@@ -199,20 +211,38 @@
     if (text && ms) osd.t = setTimeout(function () { osd(''); }, ms);
   }
 
+  /* ───────── 저장 진행 표시 ───────── */
+  function saveStart(total, label) {
+    saveBar.hidden = false;
+    saveBar.classList.add('is-on');
+    saveSet(0, total, label || '저장 중...');
+  }
+
+  function saveSet(done, total, label) {
+    var pct = total ? Math.round((done / total) * 100) : 0;
+    saveFill.style.width = pct + '%';
+    saveText.textContent = (label || '저장 중...') + ' ' + done + '/' + total;
+  }
+
+  function saveEnd() {
+    saveBar.classList.remove('is-on');
+    setTimeout(function () { saveBar.hidden = true; }, 260);
+  }
+
   /* ───────── IndexedDB ───────── */
-  var _db = null;
+  var DB_NAME = 'opirus-cassette', DB_VER = 2, _db = null;
 
   function openDB() {
     return new Promise(function (resolve, reject) {
       if (!window.indexedDB) { reject(new Error('no-idb')); return; }
-      var req = indexedDB.open('opirus-cassette', 1);
+      var req = indexedDB.open(DB_NAME, DB_VER);
       req.onupgradeneeded = function () {
         var d = req.result;
         if (!d.objectStoreNames.contains('tapes')) d.createObjectStore('tapes', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('blobs')) d.createObjectStore('blobs', { keyPath: 'key' });
       };
       req.onsuccess = function () { resolve(req.result); };
       req.onerror = function () { reject(req.error || new Error('idb-error')); };
-      req.onblocked = function () { reject(new Error('idb-blocked')); };
     });
   }
 
@@ -225,31 +255,45 @@
     });
   }
 
-  function withStore(mode, fn) {
+  function req(store, mode, fn) {
     return db().then(function (d) {
       return new Promise(function (resolve, reject) {
-        var tx = d.transaction('tapes', mode);
-        var os = tx.objectStore('tapes');
-        var req = fn(os);
-        req.onsuccess = function () { resolve(req.result); };
-        req.onerror = function () { reject(req.error); };
+        var tx = d.transaction(store, mode);
+        var r = fn(tx.objectStore(store));
+        r.onsuccess = function () { resolve(r.result); };
+        r.onerror = function () { reject(r.error); };
       });
     });
   }
 
-  function idbAll() { return withStore('readonly', function (os) { return os.getAll(); }); }
-  function idbPut(t) { return withStore('readwrite', function (os) { return os.put(t); }); }
-  function idbDel(id) { return withStore('readwrite', function (os) { return os.delete(id); }); }
+  function tapeAll() { return req('tapes', 'readonly', function (os) { return os.getAll(); }); }
+  function tapePut(t) { return req('tapes', 'readwrite', function (os) { return os.put(t); }); }
+  function tapeDel(id) { return req('tapes', 'readwrite', function (os) { return os.delete(id); }); }
+  function blobPut(key, blob) { return req('blobs', 'readwrite', function (os) { return os.put({ key: key, blob: blob }); }); }
+  function blobGet(key) { return req('blobs', 'readonly', function (os) { return os.get(key); }); }
 
-  function saveTapeRec(t) {
-    return idbPut(t).then(
-      function () { S.idbOk = true; },
-      function () { S.idbOk = false; }
-    );
+  function blobsDelTape(tapeId) {
+    return db().then(function (d) {
+      return new Promise(function (resolve) {
+        var tx = d.transaction('blobs', 'readwrite');
+        var os = tx.objectStore('blobs');
+        var range = IDBKeyRange.bound(tapeId + ':', tapeId + ':\uffff');
+        var cur = os.openCursor(range);
+        cur.onsuccess = function () {
+          var c = cur.result;
+          if (!c) { resolve(); return; }
+          c.delete();
+          c.continue();
+        };
+        cur.onerror = function () { resolve(); };
+      });
+    });
   }
 
-  function loadTapes() {
-    return idbAll().then(
+  function blobKey(tapeId, trackId) { return tapeId + ':' + trackId; }
+
+  function loadTapeList() {
+    return tapeAll().then(
       function (all) { S.idbOk = true; return all || []; },
       function () { S.idbOk = false; return S.tapes.slice(); }
     );
@@ -277,8 +321,6 @@
         elFill.style.width = (p * 100).toFixed(2) + '%';
         paintTape(p);
       }
-    } else if (S.i < 0) {
-      elDur.textContent = '--:--';
     }
 
     if ('mediaSession' in navigator && navigator.mediaSession.setPositionState && isFinite(d) && d > 0) {
@@ -321,6 +363,24 @@
     paintTape(0);
   }
 
+  function releaseUrl() {
+    if (S.curUrl) {
+      try { URL.revokeObjectURL(S.curUrl); } catch (e) {}
+      S.curUrl = null;
+    }
+  }
+
+  function stopAudio() {
+    try {
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+    } catch (e) {}
+    S.playing = false;
+    paintPlaying();
+    stopLoop();
+  }
+
   function play() {
     if (!S.tracks.length) { openSheet('tapes'); return; }
     if (S.off) powerOn();
@@ -337,15 +397,37 @@
     if (idx < 0 || idx >= S.tracks.length) return;
     S.i = idx;
     var t = S.tracks[idx];
-    audio.src = t.url;
+
+    stopAudio();
+    releaseUrl();
+    S.loadToken++;
+
     elTitle.textContent = t.name;
     elTitle.title = t.name;
-    elLabelNum.textContent = String(idx + 1).padStart(2, '0');
+    elLabelNum.textContent = pad2(idx + 1);
     resetTimeUI();
     if (isFinite(t.dur)) elDur.textContent = fmt(t.dur);
     mediaMeta(t);
     renderNowTracks();
-    if (autoplay) play();
+
+    if (t.blob) {
+      S.curUrl = URL.createObjectURL(t.blob);
+      audio.src = S.curUrl;
+      if (autoplay) play();
+      return;
+    }
+
+    var token = S.loadToken;
+    var key = blobKey(S.tape ? S.tape.id : '', t.id);
+    blobGet(key).then(function (rec) {
+      if (token !== S.loadToken) return;
+      if (!rec || !rec.blob) { hint('음원을 찾을 수 없습니다', 4000); return; }
+      S.curUrl = URL.createObjectURL(rec.blob);
+      audio.src = S.curUrl;
+      if (autoplay) play();
+    }).catch(function () {
+      if (token === S.loadToken) hint('음원을 읽지 못했습니다', 4000);
+    });
   }
 
   function next() {
@@ -422,31 +504,10 @@
   }
 
   /* ───────── 테이프 넣기 / 꺼내기 ───────── */
-  function buildTracks(tape) {
+  function tracksOf(tape) {
     return (tape.tracks || []).map(function (t) {
-      return {
-        name: t.name,
-        blob: t.blob,
-        dur: t.dur,
-        size: t.size || (t.blob && t.blob.size) || 0,
-        url: URL.createObjectURL(t.blob)
-      };
+      return { id: t.id, name: t.name, dur: t.dur, size: t.size || 0, blob: t.blob || null };
     });
-  }
-
-  function releaseUrls() {
-    S.tracks.forEach(function (t) { if (t.url) { try { URL.revokeObjectURL(t.url); } catch (e) {} } });
-  }
-
-  function stopAudio() {
-    try {
-      audio.pause();
-      audio.removeAttribute('src');
-      audio.load();
-    } catch (e) {}
-    S.playing = false;
-    paintPlaying();
-    stopLoop();
   }
 
   function insertTape(tape, opts) {
@@ -460,9 +521,9 @@
     }
 
     stopAudio();
-    releaseUrls();
+    releaseUrl();
     S.tape = tape;
-    S.tracks = buildTracks(tape);
+    S.tracks = tracksOf(tape);
     S.i = -1;
     S.insertTimer.forEach(clearTimeout);
     S.insertTimer = [];
@@ -485,18 +546,13 @@
       tapeEl.classList.remove('tape--out');
       tapeEl.classList.add('is-ghost');
 
-      S.insertTimer.push(setTimeout(function () {
-        flap(true);
-        clickSound(true);
-      }, 120));
-
+      S.insertTimer.push(setTimeout(function () { flap(true); clickSound(true); }, 120));
       S.insertTimer.push(setTimeout(function () {
         tapeEl.classList.remove('is-ghost');
         tapeEl.classList.remove('tape--in');
         void tapeEl.offsetWidth;
         tapeEl.classList.add('tape--in');
       }, 300));
-
       S.insertTimer.push(setTimeout(function () {
         flap(false);
         clickSound(true);
@@ -513,7 +569,7 @@
     if (S.tracks.length) setTrack(0, opts && opts.autoplay !== false);
     else {
       elTitle.textContent = S.tape.name + ' · 빈 테이프';
-      hint('빈 테이프입니다 · ＋ 음원으로 곡을 담으세요', 4000);
+      hint('빈 테이프입니다 · 곡 넣기로 음원을 담으세요', 4000);
     }
   }
 
@@ -525,7 +581,7 @@
     S.insertTimer.forEach(clearTimeout);
     S.insertTimer = [];
     stopAudio();
-    releaseUrls();
+    releaseUrl();
 
     S.tape = null;
     S.tracks = [];
@@ -583,7 +639,6 @@
     s.className = 'mini';
     s.setAttribute('aria-hidden', 'true');
     s.style.setProperty('--m-bg', st.mini);
-    s.appendChild(document.createElement('i'));
     return s;
   }
 
@@ -603,12 +658,12 @@
     if (!S.tracks.length) {
       var li = document.createElement('li');
       li.className = 'pl__empty';
-      li.textContent = '빈 테이프입니다. ＋ 음원으로 곡을 담으세요.';
+      li.textContent = '빈 테이프입니다. ＋ 로 곡을 담으세요.';
       elPl.appendChild(li);
       return;
     }
     S.tracks.forEach(function (t, idx) {
-      var li = document.createElement('li');
+      var item = document.createElement('li');
       var b = document.createElement('button');
       b.type = 'button';
       b.className = 'pl__item' + (idx === S.i ? ' is-on' : '');
@@ -616,7 +671,7 @@
 
       var num = document.createElement('span');
       num.className = 'pl__num';
-      num.textContent = String(idx + 1).padStart(2, '0');
+      num.textContent = pad2(idx + 1);
 
       var nm = document.createElement('span');
       nm.className = 'pl__name';
@@ -632,8 +687,8 @@
         setTrack(idx, true);
         closeSheets();
       });
-      li.appendChild(b);
-      elPl.appendChild(li);
+      item.appendChild(b);
+      elPl.appendChild(item);
     });
   }
 
@@ -641,11 +696,6 @@
     elShelf.innerHTML = '';
     var others = S.tapes.filter(function (t) { return !S.tape || t.id !== S.tape.id; });
     elTapesCount.textContent = S.tapes.length + '개';
-
-    if (S.tape) {
-      var head = $('#shelf-head');
-      if (head) head.textContent = '테이프 함';
-    }
 
     others.forEach(function (t) {
       var li = document.createElement('li');
@@ -662,24 +712,42 @@
       var go = document.createElement('button');
       go.type = 'button';
       go.className = 'tape-row__go';
-      go.textContent = '넣기';
-      go.addEventListener('click', function () {
-        clickSound();
-        insertTape(t, { animate: true, autoplay: true });
-      });
+      if ((t.tracks || []).length) {
+        go.textContent = '넣기';
+        go.addEventListener('click', function () {
+          clickSound();
+          insertTape(t, { animate: true, autoplay: true });
+        });
+      } else {
+        go.textContent = '＋ 곡 넣기';
+        go.classList.add('is-fill');
+        go.addEventListener('click', function () {
+          clickSound();
+          pickForTape(t);
+        });
+      }
+
+      var add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'tape-row__plus';
+      add.textContent = '＋';
+      add.setAttribute('aria-label', t.name + '에 곡 담기');
+      add.addEventListener('click', function () { clickSound(); pickForTape(t); });
 
       var del = document.createElement('button');
       del.type = 'button';
       del.className = 'tape-row__del';
-      del.textContent = '삭제';
-      del.setAttribute('aria-label', t.name + ' 삭제');
+      del.textContent = '✕';
+      del.setAttribute('aria-label', t.name + ' 테이프 지우기');
       var armed = 0;
       del.addEventListener('click', function () {
         if (!armed) {
           armed = 1;
           del.classList.add('is-armed');
-          del.textContent = '정말?';
-          setTimeout(function () { armed = 0; del.classList.remove('is-armed'); del.textContent = '삭제'; }, 3000);
+          del.textContent = '삭제?';
+          setTimeout(function () {
+            armed = 0; del.classList.remove('is-armed'); del.textContent = '✕';
+          }, 3000);
           return;
         }
         removeTape(t.id);
@@ -687,24 +755,25 @@
 
       li.appendChild(miniEl(t.style));
       li.appendChild(meta);
+      if ((t.tracks || []).length) li.appendChild(add);
       li.appendChild(go);
       li.appendChild(del);
       elShelf.appendChild(li);
     });
 
-    var add = document.createElement('li');
+    var addLi = document.createElement('li');
     var addBtn = document.createElement('button');
     addBtn.type = 'button';
     addBtn.className = 'slot-new';
     var icon = document.createElement('i');
     icon.textContent = '＋';
     var label = document.createElement('span');
-    label.textContent = others.length || S.tape ? '새 테이프 만들기' : '첫 테이프 만들기 — 이름과 라벨을 정하고 음원을 담으세요';
+    label.textContent = others.length || S.tape ? '새 테이프 만들기 — 이름과 라벨을 정해요' : '첫 테이프 만들기';
     addBtn.appendChild(icon);
     addBtn.appendChild(label);
     addBtn.addEventListener('click', function () { clickSound(); openNew(); });
-    add.appendChild(addBtn);
-    elShelf.appendChild(add);
+    addLi.appendChild(addBtn);
+    elShelf.appendChild(addLi);
 
     updateStorageNote();
   }
@@ -714,35 +783,132 @@
     var txt = '테이프는 이 기기 브라우저에만 저장됩니다';
     if (used) txt += ' · ' + bytes(used) + ' 사용';
     if (!S.idbOk) txt += ' · 이 브라우저에서는 보관할 수 없습니다(시크릿 모드)';
-    else if (navigator.storage && navigator.storage.estimate) {
+    elStorageNote.textContent = txt;
+
+    if (navigator.storage && navigator.storage.estimate) {
       navigator.storage.estimate().then(function (q) {
         if (q && q.quota) {
-          elStorageNote.textContent = txt + ' · 남은 공간 ' + bytes(Math.max(0, q.quota - q.usage));
-        } else elStorageNote.textContent = txt;
-      }).catch(function () { elStorageNote.textContent = txt; });
-      elStorageNote.textContent = txt;
-      return;
+          elStorageNote.textContent = txt + ' · 남은 공간 약 ' + bytes(Math.max(0, q.quota - q.usage));
+        }
+      }).catch(function () {});
     }
-    elStorageNote.textContent = txt;
   }
 
   function removeTape(id) {
     var wasCurrent = S.tape && S.tape.id === id;
     S.tapes = S.tapes.filter(function (t) { return t.id !== id; });
-    idbDel(id).catch(function () { S.idbOk = false; });
+    tapeDel(id).catch(function () { S.idbOk = false; });
+    blobsDelTape(id);
     if (wasCurrent) ejectTape({ animate: false });
     renderShelf();
     hint('테이프를 지웠습니다', 2500);
   }
 
-  /* ───────── 새 테이프 만들기 ───────── */
+  /* ───────── 음원 담기 (한 파일씩 저장 + 진행률) ───────── */
   var AUDIO_EXT = /\.(mp3|m4a|aac|wav|flac|ogg|oga|opus|wma|weba|webm|mp4|aif|aiff|mid|midi)$/i;
-  var MIME_RE = /^(audio|video)\//;
 
   function isAudio(f) {
-    return (f.type && MIME_RE.test(f.type)) || AUDIO_EXT.test(f.name || '');
+    return (f.type && /^(audio|video)\//.test(f.type)) || AUDIO_EXT.test(f.name || '');
   }
 
+  function probeBlob(blob) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(blob);
+      var a = new Audio();
+      var done = false;
+      function fin(d) {
+        if (done) return;
+        done = true;
+        try { a.removeAttribute('src'); } catch (e) {}
+        URL.revokeObjectURL(url);
+        resolve(d);
+      }
+      a.preload = 'metadata';
+      a.addEventListener('loadedmetadata', function () { fin(isFinite(a.duration) ? a.duration : NaN); });
+      a.addEventListener('error', function () { fin(NaN); });
+      setTimeout(function () { fin(NaN); }, 6000);
+      a.src = url;
+    });
+  }
+
+  function addFilesToTape(tape, files) {
+    var list = Array.prototype.slice.call(files).filter(isAudio);
+    if (!list.length) { hint('음원 파일이 아닙니다', 2800); return Promise.resolve(0); }
+
+    var done = 0, added = 0;
+    saveStart(list.length, '저장 중...');
+
+    function step(i) {
+      if (i >= list.length) {
+        saveEnd();
+        return Promise.resolve(added);
+      }
+      var f = list[i];
+      var nm = cleanName(f.name);
+      var dup = (tape.tracks || []).some(function (t) {
+        return t.name === nm && (t.size || 0) === (f.size || 0);
+      });
+      if (dup) { done++; saveSet(done, list.length, '저장 중...'); return step(i + 1); }
+
+      var id = uid();
+      return blobPut(blobKey(tape.id, id), f).then(function () {
+        return probeBlob(f);
+      }).then(function (dur) {
+        tape.tracks = tape.tracks || [];
+        tape.tracks.push({ id: id, name: nm, dur: dur, size: f.size || 0 });
+        added++;
+        done++;
+        saveSet(done, list.length, '저장 중...');
+        return tapePut(tape);
+      }).then(function () {
+        return tick();
+      }).then(function () {
+        return step(i + 1);
+      }).catch(function (err) {
+        saveEnd();
+        var quota = err && (err.name === 'QuotaExceededError' || /quota/i.test(String(err.name || err.message)));
+        hint(quota ? '저장 공간이 부족합니다 · 오래된 테이프를 지워 주세요' : '저장 중 문제가 생겼습니다', 6000);
+        throw err;
+      });
+    }
+
+    return step(0);
+  }
+
+  function pickForTape(tape) {
+    S.fileTarget = 'tape';
+    S.targetTape = tape;
+    fileInput.value = '';
+    fileInput.click();
+  }
+
+  function takeFilesForTape(tape, files) {
+    return addFilesToTape(tape, files).then(function (added) {
+      if (!added) { hint('담은 곡이 없습니다', 2500); return; }
+      renderShelf();
+      if (S.tape && S.tape.id === tape.id) {
+        syncCurrentTape();
+        if (S.i < 0) setTrack(0, true);
+      } else {
+        renderShelf();
+        insertTape(tape, { animate: true, autoplay: true });
+        hint('"' + clip(tape.name, 12) + '" 테이프에 ' + added + '곡을 담았습니다', 4000);
+      }
+    }).catch(function () {});
+  }
+
+  function syncCurrentTape() {
+    var cur = S.tracks[S.i];
+    S.tracks = tracksOf(S.tape);
+    if (cur) {
+      for (var k = 0; k < S.tracks.length; k++) {
+        if (S.tracks[k].id === cur.id) { S.i = k; break; }
+      }
+    }
+    renderNow();
+  }
+
+  /* ───────── 새 테이프 만들기 ───────── */
   function openNew(files) {
     S.pending = files ? Array.prototype.slice.call(files).filter(isAudio) : [];
     elNewName.value = '';
@@ -768,7 +934,7 @@
 
       var num = document.createElement('span');
       num.className = 'pl__num';
-      num.textContent = String(idx + 1).padStart(2, '0');
+      num.textContent = pad2(idx + 1);
 
       var nm = document.createElement('span');
       nm.className = 'pl__name';
@@ -798,124 +964,60 @@
     elNewSave.textContent = S.pending.length ? '테이프 만들기 (' + S.pending.length + '곡)' : '테이프 만들기';
   }
 
-  function probe(url) {
-    return new Promise(function (resolve) {
-      var a = new Audio();
-      var done = false;
-      var finish = function (d) {
-        if (done) return;
-        done = true;
-        a.removeAttribute('src');
-        resolve(d);
-      };
-      a.preload = 'metadata';
-      a.addEventListener('loadedmetadata', function () {
-        finish(isFinite(a.duration) ? a.duration : NaN);
-      });
-      a.addEventListener('error', function () { finish(NaN); });
-      setTimeout(function () { finish(isFinite(a.duration) ? a.duration : NaN); }, 5000);
-      a.src = url;
-    });
-  }
-
-  function probeAll(recs, onProgress) {
-    var n = recs.length;
-    if (!n) return Promise.resolve();
-    var next = 0, running = 0, done = 0;
-    return new Promise(function (resolve) {
-      function launch() {
-        while (running < 4 && next < n) {
-          (function (i) {
-            var url = URL.createObjectURL(recs[i].blob);
-            running++;
-            probe(url).then(function (d) {
-              recs[i].dur = d;
-              try { URL.revokeObjectURL(url); } catch (e) {}
-              running--; done++;
-              if (onProgress) onProgress(done, n);
-              if (done === n) resolve(); else launch();
-            });
-          })(next++);
-        }
-      }
-      launch();
-    });
-  }
-
   function saveNewTape() {
     if (S.busy) return;
     var name = elNewName.value.trim() || '새 테이프';
     var files = S.pending.slice();
     if (!files.length) return;
 
+    var tape = {
+      id: uid(),
+      name: name,
+      style: S.newStyle,
+      createdAt: Date.now(),
+      tracks: []
+    };
+
     S.busy = true;
     elNewSave.disabled = true;
-    elNewSave.textContent = '음원 정보 읽는 중...';
+    elNewSave.textContent = '저장 준비...';
 
-    var recs = files.map(function (f) {
-      return { name: cleanName(f.name), blob: f, dur: NaN, size: f.size || 0 };
-    });
-
-    probeAll(recs, function (d, n) {
-      elNewSave.textContent = '음원 정보 읽는 중 ' + d + '/' + n;
-    }).then(function () {
-      var tape = {
-        id: uid(),
-        name: name,
-        style: S.newStyle,
-        createdAt: Date.now(),
-        tracks: recs
-      };
+    tapePut(tape).then(function () {
       S.tapes.unshift(tape);
+      return addFilesToTape(tape, files);
+    }).then(function (added) {
+      S.busy = false;
+      S.pending = [];
       try { localStorage.setItem('opirus.style', S.newStyle); } catch (e) {}
-      return saveTapeRec(tape).then(function () {
-        S.busy = false;
-        S.pending = [];
-        closeSheets();
-        insertTape(tape, { animate: true, autoplay: true });
-        hint('"' + clip(name, 14) + '" 테이프를 만들었습니다', 4000);
-      });
+      closeSheets();
+      insertTape(tape, { animate: true, autoplay: true });
+      hint('"' + clip(name, 14) + '" 테이프를 만들었습니다 · ' + added + '곡', 4000);
     }).catch(function () {
       S.busy = false;
+      renderShelf();
       elNewSave.disabled = false;
       elNewSave.textContent = '테이프 만들기';
-      hint('테이프를 만들지 못했습니다', 4000);
     });
   }
 
-  /* 현재 테이프에 곡 더 담기 */
-  function appendToCurrent(files) {
-    if (!S.tape) { openNew(files); return; }
-    var list = Array.prototype.slice.call(files).filter(isAudio);
-    if (!list.length) { hint('음원 파일이 아닙니다', 2800); return; }
+  /* ───────── 기본 테이프 3개 ───────── */
+  function seedDefaults() {
+    var seeded = null;
+    try { seeded = localStorage.getItem('opirus.seeded'); } catch (e) {}
+    if (seeded === '1') return Promise.resolve();
 
-    var added = 0;
-    var fresh = [];
-    list.forEach(function (f) {
-      var nm = cleanName(f.name);
-      var dup = S.tape.tracks.some(function (t) {
-        return t.name === nm && (t.size || 0) === (f.size || 0);
+    var base = Date.now();
+    var chain = Promise.resolve();
+    DEFAULTS.forEach(function (d, i) {
+      chain = chain.then(function () {
+        var t = { id: uid(), name: d.name, style: d.style, createdAt: base - i, tracks: [] };
+        S.tapes.push(t);
+        return tapePut(t).catch(function () { S.idbOk = false; });
       });
-      if (dup) return;
-      var rec = { name: nm, blob: f, dur: NaN, size: f.size || 0 };
-      S.tape.tracks.push(rec);
-      var slide = { name: nm, blob: f, dur: NaN, size: f.size || 0, url: URL.createObjectURL(f) };
-      S.tracks.push(slide);
-      fresh.push(slide);
-      added++;
     });
-
-    if (!added) { hint('이미 담겨 있습니다', 2500); return; }
-
-    renderNow();
-    hint(added + '곡을 담았습니다 (' + S.tracks.length + '곡)', 3000);
-
-    probeAll(fresh).then(function () {
-      saveTapeRec(S.tape);
-      renderNow();
+    return chain.then(function () {
+      try { localStorage.setItem('opirus.seeded', '1'); } catch (e) {}
     });
-
-    if (S.i < 0) setTrack(0, true);
   }
 
   /* ───────── 시트 ───────── */
@@ -1006,12 +1108,11 @@
 
   audio.addEventListener('loadedmetadata', function () {
     var t = S.tracks[S.i];
-    if (t && !isFinite(t.dur)) {
+    if (t && !isFinite(t.dur) && isFinite(audio.duration)) {
       t.dur = audio.duration;
       if (S.tape) {
         var src = S.tape.tracks[S.i];
-        if (src) src.dur = audio.duration;
-        saveTapeRec(S.tape);
+        if (src) { src.dur = audio.duration; tapePut(S.tape).catch(function () {}); }
         renderNowTracks();
       }
     }
@@ -1042,10 +1143,19 @@
     fileInput.click();
   }
 
+  $('#key-shelf').addEventListener('click', function () { clickSound(); openSheet('tapes'); });
+  $('#now-add').addEventListener('click', function () {
+    if (S.tape) pickForTape(S.tape);
+  });
+  $('#new-pick').addEventListener('click', function () { pickFiles('new'); });
+
   fileInput.addEventListener('change', function () {
     var files = Array.prototype.slice.call(fileInput.files || []);
     if (!files.length) return;
-    if (S.fileTarget === 'add') { appendToCurrent(files); return; }
+    if (S.fileTarget === 'tape' && S.targetTape) {
+      takeFilesForTape(S.targetTape, files);
+      return;
+    }
     if (!sheetNew.hidden) {
       S.pending = S.pending.concat(files.filter(isAudio));
       renderPending();
@@ -1060,14 +1170,12 @@
   $('#btn-next').addEventListener('click', function () { clickSound(); next(); });
   $('#btn-pwr').addEventListener('click', function () { clickSound(); togglePower(); });
 
-  $('#key-shelf').addEventListener('click', function () { clickSound(); openSheet('tapes'); });
-  $('#now-add').addEventListener('click', function () { pickFiles('add'); });
-  $('#new-pick').addEventListener('click', function () { pickFiles('new'); });
   $('#btn-eject').addEventListener('click', function () {
     clickSound();
     if (S.tape) ejectTape({ animate: true });
     else openSheet('tapes');
   });
+
   srcTape.addEventListener('click', function () { clickSound(); openSheet('tapes'); });
 
   $('#now-eject').addEventListener('click', function () {
@@ -1088,7 +1196,6 @@
     paintStyles();
   });
 
-  /* 시트 닫기 */
   Object.keys(sheets).forEach(function (k) {
     sheets[k].addEventListener('click', function (e) {
       if (e.target === sheets[k]) closeSheets();
@@ -1098,7 +1205,6 @@
     });
   });
 
-  /* 진행 바 */
   elSeek.addEventListener('pointerdown', function () { S.dragging = true; });
   window.addEventListener('pointerup', function () { S.dragging = false; });
   elSeek.addEventListener('input', function () {
@@ -1113,7 +1219,6 @@
   });
   elSeek.addEventListener('change', function () { S.dragging = false; updateTime(); });
 
-  /* 버튼 소리 스위치 */
   var sw = $('#sw-click');
   sw.setAttribute('aria-checked', String(S.click));
   sw.addEventListener('click', function () {
@@ -1123,7 +1228,6 @@
     if (S.click) clickSound();
   });
 
-  /* 키보드 */
   document.addEventListener('keydown', function (e) {
     if (monitor.classList.contains('is-booting')) { e.preventDefault(); endBoot(); return; }
     var tag = (e.target && e.target.tagName) || '';
@@ -1135,28 +1239,19 @@
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
     switch (e.key) {
-      case ' ': case 'Spacebar':
-        e.preventDefault(); clickSound(); togglePlay(); break;
-      case 'ArrowLeft':
-        e.preventDefault(); clickSound(); tapSeek(-1); break;
-      case 'ArrowRight':
-        e.preventDefault(); clickSound(); tapSeek(1); break;
-      case 'ArrowUp':
-        e.preventDefault(); clickSound(); prev(); break;
-      case 'ArrowDown':
-        e.preventDefault(); clickSound(); next(); break;
+      case ' ': case 'Spacebar': e.preventDefault(); clickSound(); togglePlay(); break;
+      case 'ArrowLeft': e.preventDefault(); clickSound(); tapSeek(-1); break;
+      case 'ArrowRight': e.preventDefault(); clickSound(); tapSeek(1); break;
+      case 'ArrowUp': e.preventDefault(); clickSound(); prev(); break;
+      case 'ArrowDown': e.preventDefault(); clickSound(); next(); break;
       case 'l': case 'L':
-        pickFiles(S.tape ? 'add' : 'new'); break;
-      case 's': case 'S':
-        openSheet('tapes'); break;
-      case 'n': case 'N':
-        openNew(); break;
-      case 'e': case 'E':
-        if (S.tape) ejectTape({ animate: true }); else openSheet('tapes'); break;
-      case 'i': case 'I':
-        openSheet('info'); break;
-      case 'p': case 'P':
-        clickSound(); togglePower(); break;
+        if (S.tape) pickForTape(S.tape); else pickFiles('new');
+        break;
+      case 's': case 'S': openSheet('tapes'); break;
+      case 'n': case 'N': openNew(); break;
+      case 'e': case 'E': if (S.tape) ejectTape({ animate: true }); else openSheet('tapes'); break;
+      case 'i': case 'I': openSheet('info'); break;
+      case 'p': case 'P': clickSound(); togglePower(); break;
     }
   });
 
@@ -1187,14 +1282,13 @@
   });
   if (!standalone && isIOS) btnInstall.hidden = false;
 
-  /* 서비스워커 */
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () {});
     });
   }
 
-  /* 첫 화면 */
+  /* ───────── 첫 화면 ───────── */
   tickClock();
   setInterval(tickClock, 1000);
   paintTape(0);
@@ -1205,7 +1299,6 @@
   mediaHandlers();
   updateTime();
 
-  /* 별밭 */
   (function stars() {
     var g = document.getElementById('boot-stars');
     if (!g) return;
@@ -1227,17 +1320,19 @@
     }
   })();
 
-  /* 부팅 */
   bootEl.addEventListener('pointerdown', function (e) { e.stopPropagation(); endBoot(); });
   startBoot(1500);
 
-  loadTapes().then(function (all) {
+  loadTapeList().then(function (all) {
     S.tapes = all.slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    return seedDefaults();
+  }).then(function () {
+    S.tapes.sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
     renderShelf();
 
     var id = lastId();
-    var t = id && S.tapes.filter(function (x) { return x.id === id; })[0];
-    if (!t && S.tapes.length === 1) t = S.tapes[0];
+    var t = null;
+    if (id) t = S.tapes.filter(function (x) { return x.id === id; })[0];
     if (t) insertTape(t, { animate: false, autoplay: false });
     else hint(HINT_HOME);
   }).catch(function () {
