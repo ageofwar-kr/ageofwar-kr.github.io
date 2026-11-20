@@ -10,6 +10,7 @@
  *         who 를 함께 주면 rooms/<room>/reads/<who> 도 올려 '읽음' 표시가 된다.
  * - 쓰기: rooms/<room>/messages 에 한 건 POST + rooms/<room>/reads/<name> PUT
  *         → {"ok":true,"room":"...","name":"...","key":"<서버 키>","mid":"...","ts":...}
+ * - doGet 은 첫 줄에서 roomRelay_(e) 를 먼저 부르고, 방 중계가 아니면( null ) 예전처럼 ?info·버전 응답을 낸다.
  * - 이름·방 이름 규칙은 앱(site/aichat)과 같다: 방 코드 [a-z0-9] 16자, 이름 24자, 말 1500자.
  * - 도랏이·김치의 doPost(action:chat|teach) 경로는 건드리지 않는다.
  */
@@ -19,14 +20,14 @@ var ROOM_NAME_MAX = 24;
 var ROOM_READ_DEFAULT = 30;
 var ROOM_READ_MAX = 100;
 
-function roomRelay_(p) {
-  p = p || {};
+function roomRelay_(e) {
+  var p = (e && e.parameter) || {};
   var action = String(p.action || '');
+  if (action !== 'roomread' && action !== 'roompost') return null;   /* 다른 GET(?info 등)은 기존 doGet 이 처리한다 */
   var room = roomCode_(p.room);
   if (!room) return json_({ ok: false, error: 'room_required' });
   if (action === 'roomread') return roomRead_(p, room);
-  if (action === 'roompost') return roomPost_(p, room);
-  return json_({ ok: false, error: 'bad_action' });
+  return roomPost_(p, room);
 }
 
 /* 방 코드는 앱과 같은 규칙: 영소문자·숫자만, 16자까지 */
