@@ -855,6 +855,7 @@
       if (e && e.button !== undefined && e.button > 0) return;
       holding = false;
       el.classList.add('is-down');
+      try { if (e && e.pointerId != null && el.setPointerCapture) el.setPointerCapture(e.pointerId); } catch (err) {}
       clearTimeout(timer);
       timer = setTimeout(function () {
         holding = true;
@@ -879,6 +880,13 @@
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', cancel);
+    /* 손가락이 버튼 밖에서 떨어져도 감기가 멈추게 */
+    window.addEventListener('pointerup', function () {
+      if (holding) { holding = false; clearTimeout(timer); el.classList.remove('is-down'); holdEnd(true); }
+    });
+    window.addEventListener('pointercancel', function () {
+      if (holding) { holding = false; clearTimeout(timer); el.classList.remove('is-down'); holdEnd(false); }
+    });
     el.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) { clickSound(); tapSeek(dir); } }
     });
@@ -1627,6 +1635,7 @@
 
   /* 화면이 돌아오면 음악 EQ 컨텍스트도 깨워 둔다 */
   document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden' && W.hold) { holdEnd(false); return; }
     if (document.visibilityState === 'visible' && mg && mg.ctx.state === 'suspended') {
       try { mg.ctx.resume(); } catch (e) {}
     }
