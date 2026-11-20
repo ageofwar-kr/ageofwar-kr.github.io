@@ -1,7 +1,7 @@
 {
   "name": "오피러스 카세트",
   "short_name": "오피러스",
-  "description": "오피러스 1세대 후석 7인치 LCD 모니터 감성의 카세트 테이프 플레이어. 폰에 저장된 음원을 골라 테이프로 재생합니다.",
+  "description": "오피러스 1세대 본 네비 화면에 뜨는 카세트 테이프 플레이어. 폰에 저장된 음원으로 나만의 테이프를 만들어 넣고 재생합니다.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -10,7 +10,10 @@
   "background_color": "#121110",
   "lang": "ko",
   "dir": "ltr",
-  "categories": ["music", "entertainment"],
+  "categories": [
+    "music",
+    "entertainment"
+  ],
   "icons": [
     {
       "src": "icon-192.png",

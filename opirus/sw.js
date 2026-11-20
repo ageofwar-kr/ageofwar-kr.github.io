@@ -2,12 +2,12 @@
    원칙: 네트워크 우선. 새 버전을 바로 받아 오고, 끊겼을 때만 저장해 둔 화면을 쓴다.
    · 앱 셸(HTML·CSS·JS·아이콘)만 캐시한다. 음원 파일은 기기 메모리에서만 다뤄 캐시하지 않는다.
    · 같은 출처(same-origin) GET 요청만 다룬다. */
-var CACHE = "opirus-v1.0.4";
+var CACHE = "opirus-v1.0.5";
 var SHELL = [
   "./",
   "./index.html",
-  "./css/style.css?v=104",
-  "./js/app.js?v=104",
+  "./css/style.css?v=105",
+  "./js/app.js?v=105",
   "./manifest.json",
   "./favicon.svg",
   "./icon-192.png",
