@@ -983,6 +983,7 @@
       tapeEl.classList.add('is-ghost');
       applyLabel(null);
       elTitle.textContent = 'NO TAPE - 테이프를 넣으세요';
+      elTitle.removeAttribute('title');
       return Promise.resolve();
     }
 
@@ -997,6 +998,7 @@
         tapeEl.classList.add('is-ghost');
         applyLabel(null);
         elTitle.textContent = 'NO TAPE - 테이프를 넣으세요';
+        elTitle.removeAttribute('title');
         flap(false);
         osd('');
         hint('테이프를 꺼냈습니다 · SEL로 테이프 함', 3500);
@@ -1104,6 +1106,7 @@
         go.textContent = '넣기';
         go.addEventListener('click', function () {
           clickSound();
+          closeSheets();
           insertTape(t, { animate: true, autoplay: true });
         });
       } else {
