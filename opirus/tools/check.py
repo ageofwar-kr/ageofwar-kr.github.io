@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""오피러스 카세트 v1.0 검증 스크립트.
+"""오피러스 카세트 v1.1 검증 스크립트.
    사용: python3 tools/check.py            (로컬 서버: deploy-repo/opirus)
         python3 tools/check.py --live     (https://ageofwar-kr.github.io/opirus/)
 """

@@ -1,4 +1,4 @@
-/* 오피러스 카세트 v1.0
+/* 오피러스 카세트 v1.1
    앞좌석 본 네비 프레임 + 후석 7inch LCD MONITOR 감성 카세트 덱 UI.
    · 화면 전체를 한 단위(--u = 네비 폭의 1%)로 잡아 어떤 화면에서도 같은 비율로 맞춘다.
    · 베젤은 얇게, LCD는 최대한 넓게. */
@@ -245,7 +245,7 @@ body {
   right: 14%;
   height: 12%;
   border-radius: 50%;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(30, 26, 22, .38), rgba(30, 26, 22, 0) 72%);
+  background: radial-gradient(50% 50% at 50% 50%, rgba(26, 26, 24, .38), rgba(26, 26, 24, 0) 72%);
   pointer-events: none;
 }
 
@@ -321,12 +321,12 @@ body {
   width: auto;
   max-width: 68%;
   display: block;
-  filter: drop-shadow(0 calc(var(--u) * .45) calc(var(--u) * .7) rgba(45, 38, 30, .35));
+  filter: drop-shadow(0 calc(var(--u) * .45) calc(var(--u) * .7) rgba(30, 30, 28, .32));
 }
 
 .tape.is-ghost {
   opacity: .55;
-  filter: saturate(.8) contrast(.96) drop-shadow(0 calc(var(--u) * .45) calc(var(--u) * .7) rgba(45, 38, 30, .3));
+  filter: saturate(.55) contrast(.96) drop-shadow(0 calc(var(--u) * .45) calc(var(--u) * .7) rgba(30, 30, 28, .28));
 }
 
 @keyframes tape-in {
@@ -344,10 +344,10 @@ body {
 .tape--in { animation: tape-in .64s cubic-bezier(.22, .92, .3, 1) 1 both; }
 .tape--out { animation: tape-out .44s cubic-bezier(.4, 0, .8, .5) 1 both; }
 
-/* 라벨 색 = 테이프 디자인 */
-#label-bg { fill: var(--lb-bg, #e0d8c4); stroke: var(--lb-line, rgba(90, 80, 60, .45)); }
-.label-ink { fill: var(--lb-ink, #5a5344); }
-.label-rule { stroke: var(--lb-ink, #5a5344); opacity: .38; }
+/* 라벨 톤 = 테이프 디자인 (색 없이 크림·그레이·차콜) */
+#label-bg { fill: var(--lb-bg, #e7e0cf); stroke: var(--lb-line, rgba(62, 56, 46, .45)); }
+.label-ink { fill: var(--lb-ink, #24211c); }
+.label-rule { stroke: var(--lb-ink, #24211c); opacity: .32; }
 
 /* 릴 회전 */
 .reel {
@@ -604,7 +604,14 @@ body {
   letter-spacing: .02em;
   color: #f0e2c4;
   text-shadow: 0 1px 0 rgba(0, 0, 0, .8);
-  opacity: .9;
+  opacity: .55;
+  transition: opacity .2s ease, text-shadow .2s ease;
+}
+/* JBL 모드가 켜지면 패널 각인이 점등된다 */
+.wood__jbl.is-on {
+  opacity: 1;
+  color: #fff3d8;
+  text-shadow: 0 0 calc(var(--u) * 1.1) rgba(240, 214, 160, .55), 0 1px 0 rgba(0, 0, 0, .8);
 }
 
 /* ═════════ 물리 버튼 ═════════ */
@@ -943,7 +950,7 @@ body {
   width: 46px;
   height: 30px;
   border-radius: 4px;
-  background: linear-gradient(180deg, #4c453c, #241f1b);
+  background: linear-gradient(180deg, #55534f, #262523);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6), 0 1px 2px rgba(0, 0, 0, .25);
 }
 .mini::before {
@@ -962,8 +969,8 @@ body {
   transform: translateX(-50%);
   border-radius: 2px;
   background:
-    radial-gradient(circle 2.6px at 6.5px 50%, #cfc6b3 96%, transparent 100%),
-    radial-gradient(circle 2.6px at 19.5px 50%, #cfc6b3 96%, transparent 100%),
+    radial-gradient(circle 2.6px at 6.5px 50%, #dcd5c3 96%, transparent 100%),
+    radial-gradient(circle 2.6px at 19.5px 50%, #dcd5c3 96%, transparent 100%),
     #0d0b0a;
 }
 
@@ -1134,6 +1141,20 @@ body {
   background: rgba(255, 255, 255, .42);
   color: var(--ink);
 }
+
+/* 음질 표시 */
+.eqon {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 9px 12px 10px;
+  border: 1px solid rgba(38, 37, 45, .16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .42);
+}
+.eqon b { font-size: .9em; font-weight: 700; color: var(--ink); }
+.eqon span { font-size: .72em; opacity: .68; }
 
 .pick { display: flex; align-items: center; gap: 10px; }
 .pick__btn {

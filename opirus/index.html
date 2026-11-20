@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>오피러스 카세트 v1.0</title>
+<title>오피러스 카세트 v1.1</title>
 <meta name="description" content="오피러스 1세대 본 네비 화면에 뜨는 카세트 테이프 플레이어. 폰에 저장된 음원으로 나만의 테이프를 만들어 넣고 돌려 보세요. 음원은 기기 밖으로 나가지 않습니다.">
 <meta name="theme-color" content="#121110">
 <meta name="color-scheme" content="dark">
-<meta property="og:title" content="오피러스 카세트 v1.0">
+<meta property="og:title" content="오피러스 카세트 v1.1">
 <meta property="og:description" content="오피러스 1세대 본 네비에 뜨는 후석 7inch LCD 감성 카세트 플레이어.">
 <meta property="og:type" content="website">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -17,7 +17,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="오피러스">
-<link rel="stylesheet" href="css/style.css?v=110">
+<link rel="stylesheet" href="css/style.css?v=111">
 </head>
 <body>
 <main class="stage" id="stage">
@@ -54,21 +54,21 @@
             <svg class="tape is-ghost" id="tape" viewBox="0 0 400 252" role="img" aria-label="카세트 테이프 그림">
               <defs>
                 <linearGradient id="g-shell" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#544c42"/>
-                  <stop offset=".14" stop-color="#38322b"/>
-                  <stop offset=".66" stop-color="#241f1b"/>
-                  <stop offset="1" stop-color="#171412"/>
+                  <stop offset="0" stop-color="#55534f"/>
+                  <stop offset=".14" stop-color="#383632"/>
+                  <stop offset=".66" stop-color="#262523"/>
+                  <stop offset="1" stop-color="#181817"/>
                 </linearGradient>
                 <linearGradient id="g-glass" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#080706"/>
-                  <stop offset=".42" stop-color="#1d1916"/>
-                  <stop offset=".78" stop-color="#12100e"/>
-                  <stop offset="1" stop-color="#080706"/>
+                  <stop offset="0" stop-color="#0a0a09"/>
+                  <stop offset=".42" stop-color="#1d1c1a"/>
+                  <stop offset=".78" stop-color="#121211"/>
+                  <stop offset="1" stop-color="#0a0a09"/>
                 </linearGradient>
                 <radialGradient id="g-tape" cx=".42" cy=".36" r=".78">
-                  <stop offset=".55" stop-color="#3a2a22"/>
-                  <stop offset=".92" stop-color="#241a15"/>
-                  <stop offset="1" stop-color="#100c0a"/>
+                  <stop offset=".55" stop-color="#4b4843"/>
+                  <stop offset=".92" stop-color="#2c2b28"/>
+                  <stop offset="1" stop-color="#121110"/>
                 </radialGradient>
                 <linearGradient id="g-hub" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0" stop-color="#efe8d8"/>
@@ -76,16 +76,16 @@
                   <stop offset="1" stop-color="#9c9384"/>
                 </linearGradient>
                 <linearGradient id="g-lip" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#7d7365" stop-opacity=".85"/>
+                  <stop offset="0" stop-color="#8c8880" stop-opacity=".85"/>
                   <stop offset="1" stop-color="#241f1b" stop-opacity="0"/>
                 </linearGradient>
               </defs>
 
               <rect x="4" y="5" width="392" height="243" rx="19" fill="url(#g-shell)" stroke="#0a0807" stroke-width="2.5"/>
-              <rect x="9" y="10" width="382" height="233" rx="15" fill="none" stroke="#8e8474" stroke-opacity=".22" stroke-width="2"/>
+              <rect x="9" y="10" width="382" height="233" rx="15" fill="none" stroke="#9a968e" stroke-opacity=".2" stroke-width="2"/>
               <rect x="4" y="5" width="392" height="98" rx="19" fill="url(#g-lip)" opacity=".35"/>
 
-              <g fill="#7a7263" stroke="#100d0b" stroke-width="1">
+              <g fill="#8d8981" stroke="#100f0e" stroke-width="1">
                 <circle cx="19" cy="20" r="5.4"/><circle cx="381" cy="20" r="5.4"/>
                 <circle cx="19" cy="233" r="5.4"/><circle cx="381" cy="233" r="5.4"/>
               </g>
@@ -96,26 +96,25 @@
 
               <g id="label">
                 <rect id="label-bg" x="30" y="24" width="340" height="80" rx="5" stroke-width="1.2"/>
-                <rect x="30" y="24" width="340" height="80" rx="5" fill="none" stroke="#ffffff" stroke-opacity=".26"/>
-                <text class="label-ink" x="42" y="45" font-size="10.5" letter-spacing="2.2" font-weight="700" opacity=".82" font-family="Helvetica, Arial, sans-serif">OPIRUS</text>
-                <text class="label-ink" x="358" y="44" text-anchor="end" font-size="8" letter-spacing="1" opacity=".72" font-family="Helvetica, Arial, sans-serif">TYPE II</text>
-                <line class="label-rule" x1="42" y1="55.5" x2="358" y2="55.5" stroke-dasharray="2.5 4" stroke-width="1.2"/>
-                <text id="label-name" class="label-ink" x="196" y="85" text-anchor="middle" font-size="23" font-weight="700" letter-spacing="-.4" font-family="Helvetica, Arial, sans-serif">NO TAPE</text>
-                <text id="label-num" class="label-ink" x="358" y="98" text-anchor="end" font-size="11.5" font-weight="700" opacity=".72" font-family="Helvetica, Arial, sans-serif">--</text>
-                <text class="label-ink" x="42" y="98" font-size="13" font-weight="700" letter-spacing="1" opacity=".72" font-family="Helvetica, Arial, sans-serif">A</text>
+                <rect x="30" y="24" width="340" height="80" rx="5" fill="none" stroke="#ffffff" stroke-opacity=".14"/>
+                <text class="label-ink" x="42" y="45" font-size="10.5" letter-spacing="2.2" font-weight="700" opacity=".7" font-family="Helvetica, Arial, sans-serif">OPIRUS</text>
+                <text class="label-ink" x="358" y="44" text-anchor="end" font-size="8" letter-spacing="1" opacity=".55" font-family="Helvetica, Arial, sans-serif">TYPE II</text>
+                <line class="label-rule" x1="42" y1="55" x2="358" y2="55" stroke-width="1"/>
+                <text id="label-name" class="label-ink" x="200" y="88" text-anchor="middle" font-size="24" font-weight="700" letter-spacing="-.3" font-family="Helvetica, Arial, sans-serif">NO TAPE</text>
+                <text id="label-num" class="label-ink" x="358" y="99" text-anchor="end" font-size="11" font-weight="700" opacity=".5" font-family="Helvetica, Arial, sans-serif">--</text>
               </g>
 
               <rect x="94" y="114" width="212" height="82" rx="11" fill="url(#g-glass)" stroke="#0a0807"/>
-              <rect x="94" y="114" width="212" height="82" rx="11" fill="none" stroke="#8e8474" stroke-opacity=".18"/>
+              <rect x="94" y="114" width="212" height="82" rx="11" fill="none" stroke="#9a968e" stroke-opacity=".16"/>
               <circle id="tapeL" cx="140" cy="155" r="36" fill="url(#g-tape)" stroke="#0b0908" stroke-width=".6"/>
               <circle id="tapeR" cx="260" cy="155" r="36" fill="url(#g-tape)" stroke="#0b0908" stroke-width=".6"/>
-              <circle id="tapeLe" cx="140" cy="155" r="36" fill="none" stroke="#a08e78" stroke-opacity=".22"/>
-              <circle id="tapeRe" cx="260" cy="155" r="36" fill="none" stroke="#a08e78" stroke-opacity=".22"/>
+              <circle id="tapeLe" cx="140" cy="155" r="36" fill="none" stroke="#adaaa2" stroke-opacity=".2"/>
+              <circle id="tapeRe" cx="260" cy="155" r="36" fill="none" stroke="#adaaa2" stroke-opacity=".2"/>
 
               <g class="reel" id="reelL">
                 <circle cx="140" cy="155" r="13.5" fill="url(#g-hub)" stroke="#1a1613" stroke-width="1"/>
                 <circle cx="140" cy="155" r="4.6" fill="#0c0a09"/>
-                <g stroke="#7c7362" stroke-width="2.6" stroke-linecap="round">
+                <g stroke="#918c82" stroke-width="2.6" stroke-linecap="round">
                   <path d="M145 155h5.5"/><path d="M142.5 150.7l2.8 4.8"/><path d="M137.5 150.7l-2.8 4.8"/>
                   <path d="M135 155h-5.5"/><path d="M137.5 159.3l-2.8-4.8"/><path d="M142.5 159.3l2.8-4.8"/>
                 </g>
@@ -123,21 +122,21 @@
               <g class="reel" id="reelR">
                 <circle cx="260" cy="155" r="13.5" fill="url(#g-hub)" stroke="#1a1613" stroke-width="1"/>
                 <circle cx="260" cy="155" r="4.6" fill="#0c0a09"/>
-                <g stroke="#7c7362" stroke-width="2.6" stroke-linecap="round">
+                <g stroke="#918c82" stroke-width="2.6" stroke-linecap="round">
                   <path d="M265 155h5.5"/><path d="M262.5 150.7l2.8 4.8"/><path d="M257.5 150.7l-2.8 4.8"/>
                   <path d="M255 155h-5.5"/><path d="M257.5 159.3l-2.8-4.8"/><path d="M262.5 159.3l2.8-4.8"/>
                 </g>
               </g>
 
-              <path d="M150 205h100l-9 21h-82z" fill="#0b0908"/>
-              <rect x="150" y="203" width="100" height="3" rx="1.5" fill="#5a5245" opacity=".5"/>
-              <g fill="#0b0908">
+              <path d="M150 205h100l-9 21h-82z" fill="#0c0b0a"/>
+              <rect x="150" y="203" width="100" height="3" rx="1.5" fill="#6b6863" opacity=".45"/>
+              <g fill="#0c0b0a">
                 <circle cx="104" cy="222" r="6"/><circle cx="296" cy="222" r="6"/>
               </g>
-              <g fill="none" stroke="#6f6657" stroke-opacity=".5">
+              <g fill="none" stroke="#7b7770" stroke-opacity=".5">
                 <circle cx="104" cy="222" r="6"/><circle cx="296" cy="222" r="6"/>
               </g>
-              <rect x="120" y="226" width="160" height="2" rx="1" fill="#6a6255" opacity=".3"/>
+              <rect x="120" y="226" width="160" height="2" rx="1" fill="#787570" opacity=".28"/>
             </svg>
           </section>
 
@@ -272,7 +271,7 @@
       <span class="wood__slot" aria-hidden="true"></span>
       <button class="wood__src" id="src-tape" type="button" aria-label="테이프 함">◄ TAPE ►</button>
       <span class="wood__plate"><b>| OPIRUS |</b><i>FULL LOGIC · CASSETTE</i></span>
-      <span class="wood__jbl">JBL</span>
+      <span class="wood__jbl is-on" id="jbl-plate">JBL</span>
     </div>
 
     <!-- 물리 버튼 -->
@@ -286,7 +285,7 @@
       <button class="sbtn" id="btn-pwr" type="button" aria-label="전원"><b>PWR</b><i class="led" aria-hidden="true"></i></button>
     </div>
 
-    <div class="nav__badge">v1.0</div>
+    <div class="nav__badge">v1.1</div>
   </div>
 
   <footer class="stand">
@@ -340,13 +339,11 @@
       <input class="field" id="new-name" type="text" maxlength="20" placeholder="예: 트로트, 긴 뽕짝, 드라이브" autocomplete="off"
              aria-label="테이프 이름">
 
-      <h3>라벨</h3>
-      <div class="styles" id="new-styles" role="radiogroup" aria-label="라벨 색상">
-        <button class="swatch" type="button" data-style="cream" role="radio" aria-checked="true" aria-label="크림"><i style="--sw:#e0d8c4"></i><span>크림</span></button>
-        <button class="swatch" type="button" data-style="gold" role="radio" aria-checked="false" aria-label="블랙 골드"><i style="--sw:#1d1a17"></i><span>골드</span></button>
-        <button class="swatch" type="button" data-style="red" role="radio" aria-checked="false" aria-label="레드"><i style="--sw:#a8353b"></i><span>레드</span></button>
-        <button class="swatch" type="button" data-style="blue" role="radio" aria-checked="false" aria-label="블루"><i style="--sw:#2f4f7a"></i><span>블루</span></button>
-        <button class="swatch" type="button" data-style="green" role="radio" aria-checked="false" aria-label="그린"><i style="--sw:#3c6b48"></i><span>그린</span></button>
+      <h3>라벨 톤</h3>
+      <div class="styles" id="new-styles" role="radiogroup" aria-label="라벨 톤">
+        <button class="swatch" type="button" data-style="cream" role="radio" aria-checked="true" aria-label="크림"><i style="--sw:#e7e0cf"></i><span>크림</span></button>
+        <button class="swatch" type="button" data-style="grey" role="radio" aria-checked="false" aria-label="그레이"><i style="--sw:#b2ada3"></i><span>그레이</span></button>
+        <button class="swatch" type="button" data-style="charcoal" role="radio" aria-checked="false" aria-label="차콜"><i style="--sw:#211f1c"></i><span>차콜</span></button>
       </div>
 
       <h3>음원 <span class="h3__hint" id="new-size"></span></h3>
@@ -374,7 +371,7 @@
     <div class="sheet__body">
       <h3>테이프 만들기</h3>
       <p><b>SEL</b>로 테이프 함을 여세요. 기본으로 <b>클래식 50곡 · 트로트 · 긴 뽕짝</b> 빈 테이프가 들어 있습니다. <b>＋ 곡 넣기</b>를 누르면 폰의 음원을 여러 개(50곡 이상도) 한 번에 골라 담을 수 있습니다.</p>
-      <p>이름과 라벨 색을 직접 정해 <b>새 테이프 만들기</b>도 가능합니다. 한 곡짜리 긴 파일(1시간 메들리 등)도, 여러 곡도 똑같이 하나의 테이프에 담깁니다.</p>
+      <p>이름과 라벨 톤(크림·그레이·차콜)을 직접 정해 <b>새 테이프 만들기</b>도 가능합니다. 한 곡짜리 긴 파일(1시간 메들리 등)도, 여러 곡도 똑같이 하나의 테이프에 담깁니다.</p>
       <p>만든 테이프는 <b>이 기기 브라우저(IndexedDB)</b>에 저장되어, 앱을 다시 열어도 그대로 남아 있습니다. 많은 곡은 한 파일씩 차례로 저장하며 <b>저장 중... 12/50</b>처럼 진행률을 보여 줍니다.</p>
       <p>삼성 뮤직 같은 음악 앱과 직접 연결할 수는 없습니다. 폰에 저장된 음원 파일을 골라 담는 방식이고, 고른 음원은 어디에도 업로드되지 않습니다.</p>
 
@@ -387,15 +384,19 @@
 
       <h3>버튼</h3>
       <ul class="inf">
-        <li><b>◀◀</b> 10초 뒤로 — 2초 안이면 이전 곡 · 꾹 누르면 되감기</li>
+        <li><b>◀◀</b> 10초 뒤로 — 0.5초에 걸쳐 부드럽게 이동 · 2초 안이면 이전 곡 · 꾹 누르면 연속 되감기</li>
         <li><b>재생 / 멈추기</b> 재생과 일시정지</li>
-        <li><b>▶▶</b> 10초 앞으로 · 꾹 누르면 빨리감기</li>
+        <li><b>▶▶</b> 10초 앞으로 — 0.5초에 걸쳐 부드럽게 이동 · 꾹 누르면 연속 빨리감기</li>
         <li><b>테이프 함</b> 테이프 고르기 · <b>SEL</b> 같은 기능</li>
         <li><b>INFO</b> 이 안내 · <b>PWR</b> 화면 끄고 켜기</li>
       </ul>
 
       <h3>차량 · 잠금화면</h3>
       <p>블루투스로 연결하면 잠금화면과 핸들 리모컨의 재생·일시정지, 이전 곡·다음 곡 버튼으로 조작할 수 있습니다.</p>
+
+      <h3>음질</h3>
+      <p class="eqon"><b>JBL 클리어 EQ 적용 중</b><span>저음 단단 · 중고음 선명 · 클리핑 방지 리미터</span></p>
+      <p class="sheet__note">음원은 압축하거나 깎지 않고 그대로 재생하고, 소리에만 카오디오 EQ를 더합니다.</p>
 
       <h3>버튼 소리</h3>
       <div class="row">
@@ -409,7 +410,7 @@
       <h3>키보드</h3>
       <p class="mono">Space 재생 · ←→ 10초 · ↑↓ 곡 · L 음원 · S 테이프 함 · E 꺼내기 · N 새 테이프 · I 안내 · P 전원</p>
 
-      <p class="sheet__ver">오피러스 카세트 v1.0 · 본 네비 + 후석 7inch LCD MONITOR 감성</p>
+      <p class="sheet__ver">오피러스 카세트 v1.1 · 본 네비 + 후석 7inch LCD MONITOR 감성</p>
     </div>
     <footer class="sheet__foot">
       <button class="sheet__btn" type="button" data-close>닫기</button>
@@ -424,6 +425,6 @@
   <div class="savebar__bar"><i id="savebar-fill"></i></div>
   <span id="savebar-text">저장 중... 0/0</span>
 </div>
-<script src="js/app.js?v=110"></script>
+<script src="js/app.js?v=111"></script>
 </body>
 </html>

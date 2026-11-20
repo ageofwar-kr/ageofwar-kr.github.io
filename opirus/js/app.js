@@ -1,4 +1,4 @@
-/* 오피러스 카세트 v1.0 — 후석 7inch LCD MONITOR 감성 카세트 플레이어
+/* 오피러스 카세트 v1.1 — 후석 7inch LCD MONITOR 감성 카세트 플레이어
    · 테이프(이름·라벨·음원 목록)를 만들어 이 기기(IndexedDB)에 보관하고, 덱에 넣고 꺼낸다.
    · 음원은 파일 하나당 한 번씩 차례로 저장하고 진행률을 보여 준다(대용량·다수 파일에서도 멈추지 않게).
    · 재생은 현재 곡의 Blob만 꺼내 객체 URL로 만든다(목록만 먼저 읽어 메모리를 아낀다).
@@ -33,6 +33,7 @@
   var elPlayT = $('#play-t');
   var elPlay = $('#key-play');
   var elHint = $('#hint');
+  var jblPlate = $('#jbl-plate');
 
   var sheetTapes = $('#sheet-tapes');
   var sheetNew = $('#sheet-new');
@@ -58,18 +59,28 @@
   var saveText = $('#savebar-text');
 
   /* ───────── 상태 ───────── */
+  /* 테이프 라벨 톤 — 색 없이 크림·그레이·차콜 세 가지 단색만 쓴다 */
   var STYLES = {
-    cream: { label: '크림', bg: '#e0d8c4', ink: '#5a5344', line: 'rgba(96,86,66,.45)', mini: '#e0d8c4' },
-    gold:  { label: '블랙 골드', bg: '#1d1a17', ink: '#d9bb7d', line: 'rgba(170,140,86,.6)', mini: '#2a241d' },
-    red:   { label: '레드', bg: '#a8353b', ink: '#f8ead9', line: 'rgba(255,224,204,.42)', mini: '#a8353b' },
-    blue:  { label: '블루', bg: '#2f4f7a', ink: '#e4edf9', line: 'rgba(216,231,251,.38)', mini: '#2f4f7a' },
-    green: { label: '그린', bg: '#3c6b48', ink: '#e8f2de', line: 'rgba(226,241,216,.38)', mini: '#3c6b48' }
+    cream:    { label: '크림',   bg: '#e7e0cf', ink: '#24211c', line: 'rgba(62,56,46,.45)',  mini: '#e7e0cf' },
+    grey:     { label: '그레이', bg: '#b2ada3', ink: '#1b1a17', line: 'rgba(32,30,26,.45)',  mini: '#b2ada3' },
+    charcoal: { label: '차콜',   bg: '#211f1c', ink: '#ece6d7', line: 'rgba(236,229,214,.4)', mini: '#211f1c' }
   };
 
+  /* v1.0에 저장된 컬러 라벨 키는 가장 가까운 단색 톤으로 읽는다 */
+  var STYLE_ALIAS = { gold: 'cream', red: 'grey', blue: 'charcoal', green: 'grey' };
+
+  function styleOf(key) {
+    return STYLES[key] || STYLES[STYLE_ALIAS[key]] || STYLES.cream;
+  }
+
+  function styleKey(key) {
+    return STYLES[key] ? key : (STYLE_ALIAS[key] || 'cream');
+  }
+
   var DEFAULTS = [
-    { name: '클래식 50곡', style: 'gold' },
-    { name: '트로트', style: 'red' },
-    { name: '긴 뽕짝', style: 'blue' }
+    { name: '클래식 50곡', style: 'cream' },
+    { name: '트로트', style: 'grey' },
+    { name: '긴 뽕짝', style: 'charcoal' }
   ];
 
   var S = {
@@ -141,43 +152,334 @@
     elClock.textContent = d.getHours() + ':' + pad2(d.getMinutes());
   }
 
-  /* ───────── 버튼 딸깍 소리 ───────── */
+  /* ───────── 소리 엔진 (Web Audio) ───────── */
   var ac = null;
+  var noiseBuf = null;
+  var windSnd = null;
 
-  function clickSound(soft) {
-    if (!S.click || S.off) return;
+  function canHear() { return S.click && !S.off; }
+
+  function actx() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
     try {
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
       ac = ac || new AC();
       if (ac.state === 'suspended') ac.resume();
-      var t0 = ac.currentTime;
-      var n = Math.floor(ac.sampleRate * 0.026);
-      var buf = ac.createBuffer(1, n, ac.sampleRate);
+    } catch (e) { return null; }
+    return ac;
+  }
+
+  function noiseData(a) {
+    if (!noiseBuf || noiseBuf.sampleRate !== a.sampleRate) {
+      var n = Math.floor(a.sampleRate * 2);
+      noiseBuf = a.createBuffer(1, n, a.sampleRate);
+      var ch = noiseBuf.getChannelData(0);
+      for (var i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  /* 버튼 딸깍 */
+  function clickSound(soft) {
+    if (!canHear()) return;
+    var a = actx();
+    if (!a) return;
+    try {
+      var t0 = a.currentTime;
+      var n = Math.floor(a.sampleRate * 0.026);
+      var buf = a.createBuffer(1, n, a.sampleRate);
       var ch = buf.getChannelData(0);
       for (var i = 0; i < n; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
-      var src = ac.createBufferSource();
+      var src = a.createBufferSource();
       src.buffer = buf;
-      var bp = ac.createBiquadFilter();
+      var bp = a.createBiquadFilter();
       bp.type = 'bandpass';
-      bp.frequency.value = soft ? 1700 : 2500;
-      bp.Q.value = 1.2;
-      var g = ac.createGain();
-      g.gain.value = soft ? 0.05 : 0.075;
-      src.connect(bp).connect(g).connect(ac.destination);
+      bp.frequency.value = soft ? 1650 : 2300;
+      bp.Q.value = 1.6;
+      var lp = a.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 5200;
+      lp.Q.value = 0.4;
+      var g = a.createGain();
+      g.gain.value = soft ? 0.042 : 0.058;
+      src.connect(bp).connect(lp).connect(g).connect(a.destination);
       src.start(t0);
 
-      var o = ac.createOscillator();
+      var o = a.createOscillator();
       o.type = 'sine';
       o.frequency.setValueAtTime(soft ? 150 : 220, t0);
       o.frequency.exponentialRampToValueAtTime(80, t0 + 0.05);
-      var g2 = ac.createGain();
+      var g2 = a.createGain();
       g2.gain.setValueAtTime(soft ? 0.035 : 0.05, t0);
       g2.gain.exponentialRampToValueAtTime(0.0006, t0 + 0.06);
-      o.connect(g2).connect(ac.destination);
+      o.connect(g2).connect(a.destination);
       o.start(t0);
       o.stop(t0 + 0.07);
     } catch (e) {}
+  }
+
+  /* 스르륵 — 테이프가 슬롯을 타고 드나드는 마찰음 */
+  function sndSlide(t0, dur, peak, outward) {
+    var a = actx();
+    if (!a) return;
+    var src = a.createBufferSource();
+    src.buffer = noiseData(a);
+    src.loop = true;
+    var bp = a.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 0.85;
+    bp.frequency.setValueAtTime(outward ? 620 : 1500, t0);
+    bp.frequency.linearRampToValueAtTime(outward ? 2100 : 1150, t0 + dur * 0.55);
+    bp.frequency.linearRampToValueAtTime(outward ? 900 : 560, t0 + dur);
+    var hp = a.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 380;
+    var lp = a.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 5200;
+    lp.Q.value = 0.35;
+    var g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak * 0.7, t0 + Math.min(0.2, dur * 0.34));
+    g.gain.linearRampToValueAtTime(peak, t0 + dur * 0.6);
+    g.gain.linearRampToValueAtTime(peak * 0.62, t0 + dur * 0.9);
+    g.gain.exponentialRampToValueAtTime(0.0004, t0 + dur);
+    src.connect(bp).connect(hp).connect(lp).connect(g).connect(a.destination);
+    src.start(t0);
+    src.stop(t0 + dur + 0.03);
+  }
+
+  /* 위잉 — 덱 모터가 돌아가는 소리 */
+  function sndMotor(t0, dur, hiF, peak, fast) {
+    var a = actx();
+    if (!a) return;
+    var lo = hiF * 0.5;
+    var o = a.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(lo, t0);
+    o.frequency.exponentialRampToValueAtTime(hiF, t0 + Math.min(0.22, dur * 0.35));
+    o.frequency.setValueAtTime(hiF, t0 + dur * 0.72);
+    o.frequency.exponentialRampToValueAtTime(lo * 1.1, t0 + dur);
+    var lp = a.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.Q.value = 0.9;
+    lp.frequency.setValueAtTime(340, t0);
+    lp.frequency.linearRampToValueAtTime(720, t0 + dur * 0.4);
+    lp.frequency.linearRampToValueAtTime(420, t0 + dur);
+    var g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + Math.min(0.18, dur * 0.3));
+    g.gain.linearRampToValueAtTime(peak * 0.82, t0 + dur * 0.8);
+    g.gain.exponentialRampToValueAtTime(0.0004, t0 + dur);
+    var lfo = a.createOscillator();
+    lfo.frequency.value = fast ? 19 : 26;
+    var lg = a.createGain();
+    lg.gain.value = hiF * 0.04;
+    lfo.connect(lg).connect(o.frequency);
+    o.connect(lp).connect(g).connect(a.destination);
+    o.start(t0);
+    lfo.start(t0);
+    o.stop(t0 + dur + 0.03);
+    lfo.stop(t0 + dur + 0.03);
+  }
+
+  /* 철컥 / 딸깍 — 래치가 물리는 금속음 */
+  function sndClack(t0, peak) {
+    var a = actx();
+    if (!a) return;
+    var src = a.createBufferSource();
+    src.buffer = noiseData(a);
+    var bp = a.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 1450;
+    bp.Q.value = 1.1;
+    var lp = a.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3800;
+    lp.Q.value = 0.4;
+    var g = a.createGain();
+    g.gain.setValueAtTime(peak * 0.8, t0);
+    g.gain.exponentialRampToValueAtTime(0.0005, t0 + 0.05);
+    src.connect(bp).connect(lp).connect(g).connect(a.destination);
+    src.start(t0);
+    src.stop(t0 + 0.06);
+
+    var o = a.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(148, t0);
+    o.frequency.exponentialRampToValueAtTime(46, t0 + 0.13);
+    var g2 = a.createGain();
+    g2.gain.setValueAtTime(peak * 0.95, t0);
+    g2.gain.exponentialRampToValueAtTime(0.0006, t0 + 0.17);
+    o.connect(g2).connect(a.destination);
+    o.start(t0);
+    o.stop(t0 + 0.18);
+
+    var o2 = a.createOscillator();
+    o2.type = 'triangle';
+    o2.frequency.setValueAtTime(2350, t0 + 0.008);
+    o2.frequency.exponentialRampToValueAtTime(1500, t0 + 0.07);
+    var g3 = a.createGain();
+    g3.gain.setValueAtTime(peak * 0.22, t0 + 0.008);
+    g3.gain.exponentialRampToValueAtTime(0.0004, t0 + 0.1);
+    o2.connect(g3).connect(a.destination);
+    o2.start(t0 + 0.008);
+    o2.stop(t0 + 0.11);
+  }
+
+  /* 테이프 장착: 래치 열림 → 스르륵 → 위잉 → 철컥 → 딸깍 */
+  function sndLoad() {
+    if (!canHear()) return;
+    var a = actx();
+    if (!a) return;
+    var t = a.currentTime + 0.02;
+    sndClack(t + 0.10, 0.045);
+    sndSlide(t + 0.13, 0.58, 0.048, true);
+    sndMotor(t + 0.28, 0.62, 132, 0.026, false);
+    sndClack(t + 0.93, 0.075);
+    sndClack(t + 1.05, 0.034);
+  }
+
+  /* 테이프 배출: 해제 철컥 → 스르륵(바깥으로) → 딸깍 */
+  function sndEject() {
+    if (!canHear()) return;
+    var a = actx();
+    if (!a) return;
+    var t = a.currentTime + 0.01;
+    sndClack(t + 0.05, 0.05);
+    sndMotor(t + 0.06, 0.30, 96, 0.016, false);
+    sndSlide(t + 0.10, 0.34, 0.04, false);
+    sndClack(t + 0.48, 0.028);
+  }
+
+  /* 감기 소리 — 누르고 있는 동안만 은은하게 “위이잉~” */
+  function sndWind(on, back) {
+    if (!on) {
+      if (!windSnd) return;
+      var w = windSnd, ctx = ac;
+      windSnd = null;
+      if (!ctx) return;
+      var tn = ctx.currentTime;
+      try {
+        w.g.gain.cancelScheduledValues(tn);
+        w.g.gain.setValueAtTime(Math.max(0.0004, w.g.gain.value), tn);
+        w.g.gain.exponentialRampToValueAtTime(0.0003, tn + 0.12);
+      } catch (e) {}
+      try { w.n.stop(tn + 0.18); } catch (e) {}
+      try { w.o.stop(tn + 0.18); } catch (e) {}
+      return;
+    }
+    if (!canHear()) return;
+    if (windSnd) sndWind(false);
+    var a = actx();
+    if (!a) return;
+    var t = a.currentTime;
+    var g = a.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.03, t + 0.14);
+    g.connect(a.destination);
+
+    var n = a.createBufferSource();
+    n.buffer = noiseData(a);
+    n.loop = true;
+    var bp = a.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 0.9;
+    bp.frequency.setValueAtTime(back ? 2200 : 1500, t);
+    bp.frequency.linearRampToValueAtTime(back ? 3000 : 3400, t + 0.45);
+    var lpN = a.createBiquadFilter();
+    lpN.type = 'lowpass';
+    lpN.frequency.value = 4600;
+    lpN.Q.value = 0.3;
+    var hn = a.createGain();
+    hn.gain.value = 0.62;
+    n.connect(bp).connect(lpN).connect(hn).connect(g);
+
+    var o = a.createOscillator();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(back ? 78 : 62, t);
+    o.frequency.exponentialRampToValueAtTime(back ? 190 : 172, t + 0.35);
+    var lp = a.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 560;
+    lp.Q.value = 2;
+    var og = a.createGain();
+    og.gain.value = 0.55;
+    o.connect(lp).connect(og).connect(g);
+
+    n.start(t);
+    o.start(t);
+    windSnd = { g: g, n: n, o: o };
+  }
+
+  /* ───────── 음질 (항상 JBL 카오디오 EQ) ─────────
+     음원(Blob)은 다시 인코딩하거나 깎지 않고 그대로 흘려보낸다.
+     그 위에 저음 보강 · 중고음 선명도 · 클리핑 방지 리미터만 더한다. */
+  var mctx = null;
+  var mg = null;
+  var mGraphFail = false;
+
+  function musicCtx() {
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    try {
+      mctx = mctx || new AC({ latencyHint: 'playback' });
+      if (mctx.state === 'suspended') mctx.resume();
+    } catch (e) { return null; }
+    return mctx;
+  }
+
+  function ensureMusic() {
+    if (mg) {
+      if (mg.ctx.state === 'suspended') { try { mg.ctx.resume(); } catch (e) {} }
+      return mg;
+    }
+    if (mGraphFail) return null;
+    var a = musicCtx();
+    if (!a) { mGraphFail = true; return null; }
+    try {
+      var src = a.createMediaElementSource(audio);
+      var sub = a.createBiquadFilter();
+      sub.type = 'highpass';
+      sub.frequency.value = 28;
+      sub.Q.value = 0.6;
+      var bass = a.createBiquadFilter();
+      bass.type = 'lowshelf';
+      bass.frequency.value = 95;
+      bass.gain.value = 4.5;
+      var mud = a.createBiquadFilter();
+      mud.type = 'peaking';
+      mud.frequency.value = 320;
+      mud.Q.value = 1;
+      mud.gain.value = -1.8;
+      var pres = a.createBiquadFilter();
+      pres.type = 'peaking';
+      pres.frequency.value = 2800;
+      pres.Q.value = 0.9;
+      pres.gain.value = 3.2;
+      var air = a.createBiquadFilter();
+      air.type = 'highshelf';
+      air.frequency.value = 9000;
+      air.gain.value = 3.4;
+      var lim = a.createDynamicsCompressor();
+      lim.threshold.value = -4;
+      lim.knee.value = 8;
+      lim.ratio.value = 4;
+      lim.attack.value = 0.003;
+      lim.release.value = 0.2;
+      src.connect(sub);
+      sub.connect(bass);
+      bass.connect(mud);
+      mud.connect(pres);
+      pres.connect(air);
+      air.connect(lim);
+      lim.connect(a.destination);
+      mg = { ctx: a, src: src };
+      return mg;
+    } catch (e) {
+      mGraphFail = true;
+      return null;
+    }
   }
 
   /* ───────── 테이프 그림 ───────── */
@@ -192,7 +494,7 @@
   }
 
   function applyLabel(tape) {
-    var st = STYLES[(tape && tape.style) || 'cream'] || STYLES.cream;
+    var st = styleOf(tape && tape.style);
     tapeEl.style.setProperty('--lb-bg', st.bg);
     tapeEl.style.setProperty('--lb-ink', st.ink);
     tapeEl.style.setProperty('--lb-line', st.line);
@@ -371,6 +673,7 @@
   }
 
   function stopAudio() {
+    cancelWind();
     try {
       audio.pause();
       audio.removeAttribute('src');
@@ -384,6 +687,7 @@
   function play() {
     if (!S.tracks.length) { openSheet('tapes'); return; }
     if (S.off) powerOn();
+    ensureMusic();
     var pr = audio.play();
     if (pr && pr.catch) pr.catch(function () { hint('▶를 눌러 재생하세요', 4000); });
   }
@@ -440,31 +744,108 @@
     setTrack((S.i - 1 + S.tracks.length) % S.tracks.length, true);
   }
 
+  /* ───────── 감기 (뚝 끊기지 않는 부드러운 이동) ───────── */
+  var W = { raf: 0, hold: null, seek: null, rate: 10 };
+
+  function clampPos(v) {
+    var d = audio.duration;
+    if (!isFinite(d) || d <= 0) return Math.max(0, v);
+    return Math.min(d, Math.max(0, v));
+  }
+
+  function windSoundOff() { sndWind(false); }
+
+  function cancelWind() {
+    W.hold = null;
+    W.seek = null;
+    if (W.raf) { cancelAnimationFrame(W.raf); W.raf = 0; }
+    monitor.classList.remove('is-winding', 'is-rew');
+    windSoundOff();
+  }
+
+  /* 짧게 탭: 0.55초 동안 목표 지점까지 스르륵 */
   function tapSeek(dir) {
     if (!S.tracks.length) { openSheet('tapes'); return; }
     var d = audio.duration;
     if (!isFinite(d) || d <= 0) return;
     if (dir < 0 && audio.currentTime <= 2 && S.tracks.length > 1) { prev(); return; }
-    audio.currentTime = Math.min(d, Math.max(0, audio.currentTime + dir * 10));
-    updateTime();
+    smoothTo(audio.currentTime + dir * 10, 0.55);
   }
 
-  function wind(dir, on) {
-    clearInterval(S.wind);
-    S.wind = 0;
-    if (on) {
-      if (!S.tracks.length) return;
-      monitor.classList.add('is-winding');
-      monitor.classList.toggle('is-rew', dir < 0);
-      S.wind = setInterval(function () {
-        var d = audio.duration;
-        if (!isFinite(d) || d <= 0) return;
-        audio.currentTime = Math.min(d, Math.max(0, audio.currentTime + dir * 0.9));
-        updateTime();
-      }, 90);
-    } else {
+  function smoothTo(target, dur) {
+    var d = audio.duration;
+    if (!isFinite(d) || d <= 0) return;
+    cancelWind();
+
+    var from = audio.currentTime || 0;
+    target = clampPos(target);
+    var span = target - from;
+    if (Math.abs(span) < 0.02) { audio.currentTime = target; updateTime(); return; }
+
+    var wasPlaying = !audio.paused;
+    if (wasPlaying) audio.pause();
+
+    monitor.classList.add('is-winding');
+    monitor.classList.toggle('is-rew', span < 0);
+    sndWind(true, span < 0);
+
+    W.seek = { from: from, span: span, dur: dur || 0.55, wasPlaying: wasPlaying, t0: 0 };
+    W.raf = requestAnimationFrame(seekStep);
+  }
+
+  function seekStep(now) {
+    var s = W.seek;
+    if (!s) return;
+    if (!s.t0) s.t0 = now;
+    var k = Math.min(1, (now - s.t0) / (s.dur * 1000));
+    var e = 1 - Math.pow(1 - k, 3);
+    audio.currentTime = clampPos(s.from + s.span * e);
+    updateTime();
+    if (k >= 1) {
+      W.seek = null;
+      cancelAnimationFrame(W.raf);
+      W.raf = 0;
       monitor.classList.remove('is-winding', 'is-rew');
+      windSoundOff();
+      if (s.wasPlaying) play();
+      return;
     }
+    W.raf = requestAnimationFrame(seekStep);
+  }
+
+  /* 꾹 누르는 동안: 초당 약 10배속으로 연속 감기 */
+  function holdStart(dir) {
+    if (!S.tracks.length) return;
+    var d = audio.duration;
+    if (!isFinite(d) || d <= 0) return;
+    cancelWind();
+
+    W.hold = { dir: dir, last: 0 };
+    if (!audio.paused) audio.pause();
+    monitor.classList.add('is-winding');
+    monitor.classList.toggle('is-rew', dir < 0);
+    sndWind(true, dir < 0);
+    W.raf = requestAnimationFrame(holdStep);
+  }
+
+  function holdStep(now) {
+    if (!W.hold) return;
+    if (!W.hold.last) W.hold.last = now;
+    var dt = Math.min(0.05, (now - W.hold.last) / 1000);
+    W.hold.last = now;
+    audio.currentTime = clampPos(audio.currentTime + W.hold.dir * W.rate * dt);
+    updateTime();
+    W.raf = requestAnimationFrame(holdStep);
+  }
+
+  function holdEnd(playFromHere) {
+    if (!W.hold) return;
+    W.hold = null;
+    if (W.raf) { cancelAnimationFrame(W.raf); W.raf = 0; }
+    monitor.classList.remove('is-winding', 'is-rew');
+    windSoundOff();
+    updateTime();
+    if (playFromHere && S.tracks.length) play();
   }
 
   function holdButton(el, dir) {
@@ -477,7 +858,7 @@
       clearTimeout(timer);
       timer = setTimeout(function () {
         holding = true;
-        wind(dir, true);
+        holdStart(dir);
         if (navigator.vibrate) { try { navigator.vibrate(6); } catch (err) {} }
       }, 300);
     }
@@ -485,21 +866,21 @@
     function up() {
       clearTimeout(timer);
       el.classList.remove('is-down');
-      if (holding) { holding = false; wind(dir, false); }
+      if (holding) { holding = false; holdEnd(true); }
       else { clickSound(); tapSeek(dir); }
     }
 
     function cancel() {
       clearTimeout(timer);
       el.classList.remove('is-down');
-      if (holding) { holding = false; wind(dir, false); }
+      if (holding) { holding = false; holdEnd(false); }
     }
 
     el.addEventListener('pointerdown', down);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', cancel);
     el.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clickSound(); tapSeek(dir); }
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!e.repeat) { clickSound(); tapSeek(dir); } }
     });
   }
 
@@ -546,7 +927,8 @@
       tapeEl.classList.remove('tape--out');
       tapeEl.classList.add('is-ghost');
 
-      S.insertTimer.push(setTimeout(function () { flap(true); clickSound(true); }, 120));
+      sndLoad();
+      S.insertTimer.push(setTimeout(function () { flap(true); }, 120));
       S.insertTimer.push(setTimeout(function () {
         tapeEl.classList.remove('is-ghost');
         tapeEl.classList.remove('tape--in');
@@ -555,8 +937,6 @@
       }, 300));
       S.insertTimer.push(setTimeout(function () {
         flap(false);
-        clickSound(true);
-        S.insertTimer.push(setTimeout(function () { clickSound(); }, 90));
         osd('');
         S.insertTimer.push(setTimeout(function () { tapeEl.classList.remove('tape--in'); }, 640));
         ferry(opts);
@@ -602,7 +982,8 @@
       osd('EJECT');
       tapeEl.classList.remove('tape--in');
       tapeEl.classList.add('tape--out');
-      setTimeout(function () { flap(true); clickSound(true); }, 60);
+      sndEject();
+      setTimeout(function () { flap(true); }, 60);
       setTimeout(function () {
         tapeEl.classList.remove('tape--out');
         tapeEl.classList.add('is-ghost');
@@ -610,7 +991,6 @@
         elTitle.textContent = 'NO TAPE - 테이프를 넣으세요';
         flap(false);
         osd('');
-        clickSound();
         hint('테이프를 꺼냈습니다 · SEL로 테이프 함', 3500);
         resolve();
       }, 520);
@@ -633,8 +1013,8 @@
     return n + '곡' + (d ? ' · ' + fmt(d) : '') + ' · ' + bytes(totalSize(tape));
   }
 
-  function miniEl(styleKey) {
-    var st = STYLES[styleKey] || STYLES.cream;
+  function miniEl(styleKeyIn) {
+    var st = styleOf(styleKeyIn);
     var s = document.createElement('span');
     s.className = 'mini';
     s.setAttribute('aria-hidden', 'true');
@@ -756,7 +1136,7 @@
     var icon = document.createElement('i');
     icon.textContent = '＋';
     var label = document.createElement('span');
-    label.textContent = others.length || S.tape ? '새 테이프 만들기 — 이름과 라벨을 정해요' : '첫 테이프 만들기';
+    label.textContent = others.length || S.tape ? '새 테이프 만들기 — 이름과 라벨 톤을 정해요' : '첫 테이프 만들기';
     addBtn.appendChild(icon);
     addBtn.appendChild(label);
     addBtn.addEventListener('click', function () { clickSound(); openNew(); });
@@ -927,7 +1307,7 @@
   function openNew(files) {
     S.pending = files ? Array.prototype.slice.call(files).filter(isAudio) : [];
     elNewName.value = '';
-    S.newStyle = STYLES[S.newStyle] ? S.newStyle : 'cream';
+    S.newStyle = styleKey(S.newStyle);
     paintStyles();
     renderPending();
     openSheet('new');
@@ -988,7 +1368,7 @@
     var tape = {
       id: uid(),
       name: name,
-      style: S.newStyle,
+      style: styleKey(S.newStyle),
       createdAt: Date.now(),
       tracks: []
     };
@@ -1091,7 +1471,7 @@
       navigator.mediaSession.metadata = new MediaMetadata({
         title: t.name,
         artist: '오피러스 카세트' + (S.tape ? ' · ' + S.tape.name : ''),
-        album: 'TAPE · v1.0',
+        album: 'TAPE · v1.1',
         artwork: [
           { src: base + 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: base + 'icon-512.png', sizes: '512x512', type: 'image/png' }
@@ -1225,6 +1605,7 @@
   elSeek.addEventListener('input', function () {
     var d = audio.duration;
     if (!isFinite(d) || d <= 0) return;
+    cancelWind();
     var p = elSeek.value / 1000;
     S.dragging = true;
     audio.currentTime = p * d;
@@ -1241,6 +1622,14 @@
     sw.setAttribute('aria-checked', String(S.click));
     try { localStorage.setItem('opirus.click', S.click ? '1' : '0'); } catch (e) {}
     if (S.click) clickSound();
+    else sndWind(false);
+  });
+
+  /* 화면이 돌아오면 음악 EQ 컨텍스트도 깨워 둔다 */
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && mg && mg.ctx.state === 'suspended') {
+      try { mg.ctx.resume(); } catch (e) {}
+    }
   });
 
   document.addEventListener('keydown', function (e) {

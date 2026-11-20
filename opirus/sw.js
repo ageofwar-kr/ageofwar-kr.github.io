@@ -1,13 +1,13 @@
-/* 오피러스 카세트 v1.0 — 서비스워커
+/* 오피러스 카세트 v1.1 — 서비스워커
    원칙: 네트워크 우선. 새 버전을 바로 받아 오고, 끊겼을 때만 저장해 둔 화면을 쓴다.
    · 앱 셸(HTML·CSS·JS·아이콘)만 캐시한다. 음원 파일은 기기 메모리에서만 다뤄 캐시하지 않는다.
    · 같은 출처(same-origin) GET 요청만 다룬다. */
-var CACHE = "opirus-v1.0.10";
+var CACHE = "opirus-v1.1.0";
 var SHELL = [
   "./",
   "./index.html",
-  "./css/style.css?v=110",
-  "./js/app.js?v=110",
+  "./css/style.css?v=111",
+  "./js/app.js?v=111",
   "./manifest.json",
   "./favicon.svg",
   "./icon-192.png",
