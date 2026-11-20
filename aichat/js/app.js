@@ -314,14 +314,7 @@
       v: 1, t: "msg", who: item.who, name: item.name || "",
       text: item.text, mid: item.mid, replyTo: item.replyTo || "", ts: Date.now()
     };
-    return Room.send(S.room, payload).then(function (ev) {
-      if (item.mid && S.index[item.userMid || ""] && ev && ev.time) {
-        for (var i = 0; i < S.msgs.length; i++) {
-          if (S.msgs[i].mid === item.userMid) { S.msgs[i].ts = ev.time * 1000; break; }
-        }
-      }
-      return ev;
-    });
+    return Room.send(S.room, payload);
   }
 
   function oneReply(who, trigger) {
@@ -569,7 +562,6 @@
     loadAi();
     $("#room-code").textContent = codeLabel();
     $("#cur-room").textContent = "#" + codeLabel();
-    if ("Notification" in window) { /* 자리만 */ }
     render();
     Room.connect(roomId, function (item) {
       if (addMsg(item)) {
