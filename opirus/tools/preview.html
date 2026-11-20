@@ -47,7 +47,7 @@
     f.style.width = s.w + "px";
     f.style.height = s.h + "px";
     f.style.transform = "scale(" + s.scale + ")";
-    f.src = "../?preview=" + s.name.replace(/\s/g, "");
+    f.src = "../?preview=" + s.name.replace(/\s/g, "") + "&r=" + Date.now();
 
     f.addEventListener("load", function () {
       function measure() {
