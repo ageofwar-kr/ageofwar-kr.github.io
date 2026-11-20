@@ -61,14 +61,9 @@ body {
 /* 차 안 어둠 속의 은은한 조명 */
 .stage::before {
   content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 140vmin;
-  height: 140vmin;
-  transform: translate(-50%, -52%);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(150, 118, 74, .17), rgba(90, 70, 45, .06) 55%, rgba(0, 0, 0, 0) 72%);
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(58% 42% at 50% 50%, rgba(150, 118, 74, .18), rgba(90, 70, 45, .07) 55%, rgba(0, 0, 0, 0) 74%);
   pointer-events: none;
   z-index: 0;
 }
