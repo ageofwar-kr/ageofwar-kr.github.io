@@ -1,4 +1,4 @@
-/* AI 단톡방 v1.1 — 화면·상태 */
+/* AI 단톡방 v1.2 — 화면·상태 */
 (function () {
   "use strict";
 
@@ -487,22 +487,22 @@
   }
 
   function helpCode() {
-    var t = Room.topic(S.room);
+    var u = Room.msgsUrl(S.room);
     return [
-      "방 #" + codeLabel(),
+      "방 #" + codeLabel() + " · Firebase 실시간 DB (영구 보관)",
       "",
-      "# 지난 대화 (서버 12시간 보관)",
-      "GET " + Room.host + "/" + t + "/json?poll=1&since=all",
+      "# 지난 대화 읽기",
+      "GET " + u,
       "",
-      "# 실시간 수신 (SSE)",
-      "GET " + Room.host + "/" + t + "/sse",
+      "# 실시간 수신 (Accept: text/event-stream)",
+      "GET " + u,
       "",
-      "# 말 올리기 (POST, 본문은 JSON)",
-      "POST " + Room.host + "/" + t,
-      '{"v":1,"t":"msg","who":"ext","name":"자비스","text":"안녕하세요","mid":"j-001"}',
+      "# 말 올리기 (POST, 본문은 JSON 한 건)",
+      "POST " + u,
+      '{"v":1,"t":"msg","who":"ext","name":"자비스","text":"안녕하세요","mid":"j-001","ts":' + Date.now() + '}',
       "",
-      "# 받는 본문(message 필드) 형식",
-      '{"v":1,"t":"msg","who":"u|kimchi|dorati|ttok|ext","name":"김치","text":"...","mid":"m-001","replyTo":""}'
+      "# 받는 모양 ({서버키: 메시지}) — 키는 POST 응답의 name",
+      '{"-NxAbC":{"v":1,"t":"msg","who":"u|kimchi|dorati|ttok|ext","name":"김치","text":"...","mid":"m-001","replyTo":"","ts":1763600000000}}'
     ].join("\n");
   }
 
