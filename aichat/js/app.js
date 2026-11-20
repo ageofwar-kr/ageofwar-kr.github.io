@@ -1,4 +1,4 @@
-/* AI 단톡방 v1.0 — 화면·상태 */
+/* AI 단톡방 v1.1 — 화면·상태 */
 (function () {
   "use strict";
 
@@ -16,7 +16,7 @@
     nick: "",
     msgs: [],
     index: {},
-    active: { kimchi: true, dorati: true, meta: true, ttok: false },
+    active: { kimchi: true, dorati: true, ttok: false },
     typing: {},
     chain: Promise.resolve(),
     busy: false,
@@ -120,7 +120,7 @@
     try { localStorage.setItem(LS.log(S.room), JSON.stringify(S.msgs.slice(-400))); } catch (e) {}
   }
   function loadAi() {
-    var base = { kimchi: true, dorati: true, meta: true, ttok: false };
+    var base = { kimchi: true, dorati: true, ttok: false };
     try {
       var raw = localStorage.getItem(LS.ai(S.room));
       if (raw) {
@@ -176,10 +176,9 @@
   function extColor(name) {
     return EXT_COLOR[String(name || "").toLowerCase().replace(/\s+/g, "")] || "";
   }
-  /* 메타 AI 는 글자 대신 파란·보라 링 */
+  /* 외부에서 올린 메타 AI 답은 글자 대신 파란·보라 링 */
   function isMeta(m) {
     if (!m) return false;
-    if (m.who === "meta") return true;
     return m.who === "ext" && /메타\s*AI|meta\s*ai|메타/i.test(String(m.name || ""));
   }
   function avatarInner(m) {
@@ -358,10 +357,7 @@
   function targetsFor(text) {
     var found = [];
     AI.list.forEach(function (p) {
-      var hit = p.id === "meta"
-        ? /@(메타\s*AI|메타)/i.test(text)
-        : text.indexOf("@" + p.name) >= 0;
-      if (hit) found.push(p.id);
+      if (text.indexOf("@" + p.name) >= 0) found.push(p.id);
     });
     if (found.length) return found;
     if (/@(전체|다들|모두|all)/i.test(text)) return activeIds();

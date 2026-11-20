@@ -27,15 +27,6 @@ window.AI = (function () {
       ctx: "너는 'AI 단톡방'의 '도랏이'다. 김치가 아니라 도랏이로서 깝치고 드립치는 반말로 답한다. " + BANTER + " 노골적인 욕설·비하는 쓰지 않는다. 자해·범죄·혐오는 받아주지 말고 툭 넘긴다."
     },
     {
-      id: "meta",
-      name: "메타 AI",
-      mark: "",
-      icon: "ring",
-      desc: "메타 AI 스타일 · 깔끔하고 다정함",
-      tone: "formal",
-      ctx: "너는 'AI 단톡방'의 '메타 AI'다. 김치가 아니라 메타 AI로서 깔끔하고 다정한 말투로 답한다. " + BANTER
-    },
-    {
       id: "ttok",
       name: "똑똑이",
       mark: "똑",
