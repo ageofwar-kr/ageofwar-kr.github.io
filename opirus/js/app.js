@@ -747,7 +747,7 @@
           del.textContent = '삭제?';
           setTimeout(function () {
             armed = 0; del.classList.remove('is-armed'); del.textContent = '✕';
-          }, 3000);
+          }, 6000);
           return;
         }
         removeTape(t.id);
@@ -891,6 +891,7 @@
         if (S.i < 0) setTrack(0, true);
       } else {
         renderShelf();
+        closeSheets();
         insertTape(tape, { animate: true, autoplay: true });
         hint('"' + clip(tape.name, 12) + '" 테이프에 ' + added + '곡을 담았습니다', 4000);
       }

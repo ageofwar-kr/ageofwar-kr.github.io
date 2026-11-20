@@ -133,7 +133,7 @@ body {
     linear-gradient(124deg, rgba(255, 255, 255, .22) 0%, rgba(255, 255, 255, .07) 14%, rgba(255, 255, 255, 0) 28%),
     radial-gradient(70% 45% at 86% 6%, rgba(255, 255, 255, .1), transparent 70%);
   mix-blend-mode: screen;
-  opacity: .5;
+  opacity: .38;
   z-index: 3;
 }
 
