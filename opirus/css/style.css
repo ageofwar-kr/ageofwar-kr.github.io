@@ -44,6 +44,7 @@ body {
 }
 
 .stage {
+  position: relative;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -57,9 +58,25 @@ body {
     max(env(safe-area-inset-left), 2vw);
 }
 
+/* 차 안 어둠 속의 은은한 조명 */
+.stage::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 140vmin;
+  height: 140vmin;
+  transform: translate(-50%, -52%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(150, 118, 74, .17), rgba(90, 70, 45, .06) 55%, rgba(0, 0, 0, 0) 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ═════════ 본 네비 프레임 ═════════ */
 .nav {
   position: relative;
+  z-index: 1;
   width: var(--w);
   flex: 0 0 auto;
   padding: calc(var(--u) * 2.2) calc(var(--u) * 3.2) calc(var(--u) * 2.2);
@@ -750,6 +767,8 @@ body {
 
 /* ═════════ 페이지 하단 ═════════ */
 .stand {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
