@@ -81,7 +81,7 @@ input,textarea{font:inherit;color:inherit}
 }
 .chat::-webkit-scrollbar{width:0}
 .notice-pill{
-  position:sticky;top:8px;z-index:2;
+  position:relative;
   width:max-content;max-width:calc(100% - 26px);margin:9px auto 2px;
   background:rgba(255,255,255,.72);backdrop-filter:blur(6px);
   border-radius:999px;padding:5px 11px;
