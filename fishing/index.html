@@ -179,14 +179,14 @@ input{font-family:inherit}
 .spot-group h3{font-size:11.5px;font-weight:900;color:var(--ink2);margin:0 2px 7px;display:flex;align-items:center;gap:6px}
 .spot-group h3 .bar{width:3px;height:11px;border-radius:2px;background:var(--teal)}
 .spot-group h3 small{font-weight:700;color:#9db2be;font-size:10px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.dcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 6px 8px;
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:12px;padding:5px 3px 7px;
   text-align:center;position:relative;overflow:hidden}
-.dcard .art{height:62px;display:grid;place-items:center}
+.dcard .art{height:48px;display:grid;place-items:center}
 .dcard .art svg{width:100%;height:100%}
-.dcard .nm{font-size:10.5px;font-weight:800;letter-spacing:-.3px;line-height:1.25;margin-top:2px;
+.dcard .nm{font-size:9.5px;font-weight:800;letter-spacing:-.3px;line-height:1.25;margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
-.dcard .rr{font-size:8.5px;font-weight:800;margin-top:2px;opacity:.9}
+.dcard .rr{font-size:7.8px;font-weight:800;margin-top:2px;opacity:.9}
 .dcard.locked .art{opacity:.75}
 .dcard.locked .nm{color:#a9bcc7}
 .dcard .badge{position:absolute;top:4px;right:4px;font-size:8px;font-weight:900;color:#fff;
@@ -1638,6 +1638,16 @@ const Scene = (function(){
         ctx.beginPath(); ctx.moveTo(x,H); ctx.quadraticCurveTo(x+4,H-h*.6,x+(i%2?6:-6),H-h); ctx.stroke();
       }
       ctx.restore();
+      // lily pads
+      ctx.save(); ctx.fillStyle='rgba(74,138,96,.55)';
+      for(let i=0;i<3;i++){
+        const x=W*(0.10+i*0.10), y=H*(0.86+0.02*Math.sin(st.t*1.2+i));
+        ctx.beginPath(); ctx.ellipse(x,y,11,4.4,-0.18,0.35,6.1); ctx.fill();
+        ctx.fillStyle='rgba(74,138,96,.35)'; ctx.beginPath(); ctx.ellipse(x-6,y+7,6,2.4,0.1,0,7); ctx.fill();
+        ctx.fillStyle='rgba(74,138,96,.55)';
+      }
+      ctx.restore();
+      drawBoat(W*0.80, horizon()+2, 0.85);
     }
     if(st.spot === 'sea'){
       // tetrapods at corners
@@ -1647,9 +1657,25 @@ const Scene = (function(){
         ctx.beginPath(); ctx.ellipse(x+ (x<0?18:-18),y-10,r*0.7,r*0.6,-0.3,0,7); ctx.fill();
       });
       ctx.restore();
+      // buoy
+      const bx=W*0.87, by=H*0.60+Math.sin(st.t*1.6)*2;
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,.30)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.ellipse(bx,by+4,10,4,0,0,7); ctx.stroke();
+      ctx.fillStyle='#e05a4f';
+      ctx.beginPath(); ctx.moveTo(bx-4,by+3); ctx.quadraticCurveTo(bx,by-10,bx+4,by+3); ctx.closePath(); ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fillRect(bx-4,by-1,8,2.4);
+      ctx.restore();
+      drawBoat(W*0.15, horizon()+2, 0.7);
     }
     if(st.spot === 'offshore'){
       // boat rail
+      // distant island
+      ctx.save(); ctx.fillStyle='rgba(72,102,118,.38)';
+      ctx.beginPath(); ctx.moveTo(W*0.52,horizon());
+      ctx.quadraticCurveTo(W*0.60,horizon()-H*0.05,W*0.70,horizon()); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      drawBoat(W*0.83, horizon()+3, 0.75);
       ctx.save(); ctx.strokeStyle='rgba(58,80,95,.85)'; ctx.lineWidth=4;
       ctx.beginPath(); ctx.moveTo(0,H-10); ctx.lineTo(W,H-14); ctx.stroke();
       ctx.lineWidth=2.5;
@@ -1664,7 +1690,32 @@ const Scene = (function(){
       ctx.beginPath(); ctx.moveTo(W,H);
       ctx.quadraticCurveTo(W*.86,H-H*.2,W*.7,H); ctx.closePath(); ctx.fill();
       ctx.restore();
+      // jellyfish
+      for(let i=0;i<2;i++){
+        const jx=W*(0.22+i*0.52)+Math.sin(st.t*0.5+i*2)*10;
+        const jy=H*(0.58+i*0.16)+Math.sin(st.t*0.7+i)*8;
+        ctx.save(); ctx.globalAlpha=.22;
+        ctx.fillStyle='#9fe8ff';
+        ctx.beginPath(); ctx.ellipse(jx,jy,13,8,0,Math.PI,0); ctx.fill();
+        ctx.strokeStyle='#9fe8ff'; ctx.lineWidth=1.4;
+        for(let k=0;k<5;k++){
+          ctx.beginPath(); ctx.moveTo(jx-10+k*5,jy+1);
+          ctx.quadraticCurveTo(jx-12+k*5,jy+13,jx-8+k*5,jy+20+Math.sin(st.t*1.4+k)*3); ctx.stroke();
+        }
+        ctx.restore();
+      }
     }
+  }
+
+  function drawBoat(x,y,s){
+    ctx.save();
+    ctx.fillStyle='rgba(38,66,82,.42)';
+    ctx.beginPath(); ctx.moveTo(x-16*s,y); ctx.quadraticCurveTo(x,y+7*s,x+16*s,y);
+    ctx.lineTo(x+12*s,y-6*s); ctx.lineTo(x-12*s,y-6*s); ctx.closePath(); ctx.fill();
+    ctx.fillRect(x-0.8*s,y-20*s,1.6*s,14*s);
+    ctx.beginPath(); ctx.moveTo(x+1*s,y-19*s); ctx.lineTo(x+9*s,y-11*s); ctx.lineTo(x+1*s,y-11*s); ctx.closePath();
+    ctx.fillStyle='rgba(255,255,255,.30)'; ctx.fill();
+    ctx.restore();
   }
 
   function randSeed(i){ const x = Math.sin(i*127.1)*43758.5453; return x - Math.floor(x); }
@@ -2074,6 +2125,7 @@ const Scene = (function(){
     say(sp.car ? (sp.art==='ktx' ? '치이익— 뭔가 엄청나게 묵직하다!' : '덜컹! 대어가 아니라 탈것인가?!')
                : rare ? '전설의 기운이 느껴진다…!' : '입질! 텐션을 보며 감아 올리세요', 2600);
     showReel();
+    updateGauges();
   }
   function flashBite(){
     const f = $('biteFlash');
@@ -2137,7 +2189,7 @@ const Scene = (function(){
       const active = (now - g.lastCrank) < 200;
       if(!active) g.rotRate *= Math.pow(0.2, dt);
       const target = active ? 27 + Math.min(1, g.rotRate/900)*63 : 17;
-      const k = active ? 2.4 : 1.7;
+      const k = active ? 2.4 * (1 - 0.06*S.gear.line) : 1.7;
       g.tension = Math.max(0, Math.min(100, g.tension + (target - g.tension)*Math.min(1, dt*k)));
       if(g.tension>=80){
         g.dangerT += dt;
