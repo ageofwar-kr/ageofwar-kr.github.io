@@ -1,0 +1,2569 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>낚시의 손맛 v1.0 — 드카게임즈</title>
+<meta name="description" content="찌를 던지고, 원형 릴을 돌려 텐션을 맞추며 물고기를 끌어올리는 손맛 낚시 게임. 물고기 55종과 병맛 잡동사니·탈것 23종을 모아 보세요. 드카게임즈 v1.0">
+<meta property="og:title" content="낚시의 손맛 v1.0 — 드카게임즈">
+<meta property="og:description" content="줄 던지고 릴 돌려서 물고기를 잡는 손맛 낚시. 심해에는 KTX가 산다는 소문이…">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0f9b98">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎣%3C/text%3E%3C/svg%3E">
+<style>*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#e9f5fa;--ink:#123246;--ink2:#3d5c70;--sub:#6d8698;--line:#e3eef4;
+  --teal:#0f9b98;--teal-d:#0b7f7d;--teal-l:#e3f6f4;
+  --gold:#f0b429;--danger:#e05a4f;--safe:#22a06b;--slack:#6aa9d6;
+  --card:#ffffff;--shadow:0 10px 30px rgba(18,50,70,.10);
+}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",Roboto,sans-serif;
+  color:var(--ink);background:linear-gradient(160deg,#dff1f8 0%,#eef8fb 45%,#e2f1f7 100%);
+  overflow:hidden;overscroll-behavior:none;
+  display:flex;align-items:center;justify-content:center;
+}
+button{font-family:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input{font-family:inherit}
+#app{
+  position:relative;width:100%;max-width:560px;height:100dvh;max-height:960px;
+  display:flex;flex-direction:column;background:#f6fbfd;overflow:hidden;
+}
+@media(min-width:700px){
+  #app{border-radius:28px;box-shadow:0 30px 70px rgba(10,45,65,.22);height:min(100dvh - 48px,920px)}
+  body{background:radial-gradient(900px 600px at 15% 10%,#e7f7fd 0%,#dceff7 40%,#d3e9f2 100%)}
+}
+
+/* ---------- top bar ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 14px 7px;background:#fff;border-bottom:1px solid var(--line);flex:0 0 auto;z-index:5}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.logo{width:34px;height:34px;border-radius:11px;background:linear-gradient(145deg,#d9f4f1,#b9ece6);
+  display:grid;place-items:center;font-size:19px;flex:0 0 auto}
+.brand h1{font-size:15.5px;font-weight:800;letter-spacing:-.3px;line-height:1.15;white-space:nowrap}
+.brand h1 .ver{font-size:10.5px;font-weight:700;color:var(--teal);background:var(--teal-l);
+  padding:1px 5px;border-radius:6px;vertical-align:2px;margin-left:3px}
+.brand p{font-size:9.5px;color:var(--sub);letter-spacing:.4px;font-weight:600;margin-top:1px}
+.top-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.gold{display:flex;align-items:center;gap:4px;background:#fff8e5;border:1px solid #f7e3ab;
+  padding:5px 9px;border-radius:999px;font-size:12.5px;font-weight:800;color:#8a6100}
+.gold span{font-size:12px}
+.icon-btn{width:32px;height:32px;border-radius:10px;background:#f2f8fb;display:grid;place-items:center;font-size:15px}
+.icon-btn:active{transform:scale(.94)}
+
+/* ---------- stage ---------- */
+.stage{position:relative;flex:1 1 auto;min-height:0;overflow:hidden;background:#bfe6f7}
+#scene{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage-ui{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;
+  align-items:flex-start;gap:8px;pointer-events:none;z-index:3}
+.spot-chip{pointer-events:auto;display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.92);
+  backdrop-filter:blur(6px);padding:7px 11px;border-radius:999px;font-size:12px;font-weight:800;
+  box-shadow:0 3px 12px rgba(10,40,60,.14);color:#153c50}
+.spot-chip i{font-style:normal;font-size:9px;color:var(--sub)}
+.dex-chip{pointer-events:auto;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);
+  padding:7px 10px;border-radius:999px;font-size:11px;font-weight:700;color:var(--ink2);
+  box-shadow:0 3px 12px rgba(10,40,60,.12)}
+.dex-chip b{color:var(--teal)}
+.stage-msg{position:absolute;left:50%;bottom:14px;transform:translateX(-50%) translateY(8px);
+  background:rgba(12,42,58,.78);color:#fff;font-size:12px;font-weight:600;line-height:1.35;
+  padding:7px 14px;border-radius:999px;max-width:86%;text-align:center;opacity:0;transition:.25s;
+  pointer-events:none;z-index:4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage-msg.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.bite-flash{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;z-index:6}
+.bite-flash span{font-size:70px;font-weight:900;color:#fff;text-shadow:0 6px 24px rgba(224,90,79,.85),0 0 0 6px rgba(224,90,79,.25);
+  opacity:0;transform:scale(.4);transition:.12s}
+.bite-flash.on span{opacity:1;transform:scale(1);animation:pop .55s ease-out}
+@keyframes pop{0%{transform:scale(.5)}45%{transform:scale(1.25)}100%{transform:scale(1)}}
+.fight-tip{position:absolute;left:50%;top:52px;transform:translateX(-50%);z-index:5;
+  font-size:12.5px;font-weight:900;color:#fff;background:rgba(224,90,79,.92);
+  padding:5px 13px;border-radius:999px;opacity:0;transition:.18s;pointer-events:none;white-space:nowrap}
+.fight-tip.on{opacity:1}
+.fight-tip.calm{background:rgba(15,155,152,.92)}
+
+/* ---------- deck ---------- */
+.deck{flex:0 0 auto;background:#fff;border-top:1px solid var(--line);
+  padding:10px 14px calc(8px + env(safe-area-inset-bottom,0px));box-shadow:0 -6px 20px rgba(20,60,80,.05);z-index:5}
+.view{display:none}
+.view.is-on{display:block}
+.hint{font-size:11.5px;color:var(--sub);text-align:center;line-height:1.4;margin-bottom:8px;font-weight:600}
+.hint b{color:var(--teal-d);font-weight:800}
+.hint.small{font-size:10.5px;margin:5px 0 0}
+.castBtn{width:100%;height:52px;border-radius:15px;background:linear-gradient(180deg,#17aaa6,#0c8b88);
+  color:#fff;font-size:16px;font-weight:800;letter-spacing:-.2px;display:flex;align-items:center;
+  justify-content:center;gap:8px;box-shadow:0 6px 16px rgba(12,139,136,.32);transition:.12s}
+.castBtn .ico{font-size:18px}
+.castBtn:active{transform:translateY(2px) scale(.995);box-shadow:0 3px 8px rgba(12,139,136,.3)}
+.castBtn.hook{background:linear-gradient(180deg,#f0665a,#d94a3e);box-shadow:0 6px 16px rgba(217,74,62,.32);font-size:18px}
+.cast-disabled{opacity:.5;pointer-events:none}
+.waitStatus{height:52px;border-radius:15px;background:#f1faf9;display:flex;align-items:center;justify-content:center;gap:7px}
+.wdot{width:8px;height:8px;border-radius:50%;background:#7fd0c8;animation:waitPulse 1.1s infinite}
+.wdot:nth-child(2){animation-delay:.18s}.wdot:nth-child(3){animation-delay:.36s}
+@keyframes waitPulse{0%,100%{opacity:.25;transform:scale(.82)}50%{opacity:1;transform:scale(1.12)}}
+.miniBtn{display:block;margin:6px auto 0;font-size:10.5px;font-weight:800;color:#93a9b6;background:#f4f9fb;padding:6px 12px;border-radius:999px}
+.miniBtn:active{transform:scale(.97)}
+
+/* reel view */
+.reelWrap{display:flex;align-items:center;gap:10px}
+.gauges{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:8px}
+.g-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-bottom:3px}
+.g-label{font-size:10.5px;font-weight:800;color:var(--sub);letter-spacing:.2px}
+.g-val{font-size:12.5px;font-weight:900;color:var(--ink);font-variant-numeric:tabular-nums}
+.g-val small{font-size:9.5px;font-weight:700;color:var(--sub);margin-left:1px}
+.track{position:relative;height:13px;border-radius:999px;background:#eef4f7;overflow:hidden}
+.track .fill{position:absolute;left:0;top:0;bottom:0;width:0%;border-radius:999px;
+  background:linear-gradient(90deg,#4fc3bd,#0f9b98);transition:width .08s linear}
+.prog-fish{position:absolute;top:50%;font-size:12px;transform:translate(-50%,-50%);transition:left .08s linear;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.15))}
+.zones{position:relative;height:16px;border-radius:999px;overflow:hidden;background:#eef4f7}
+.zones i{position:absolute;top:0;bottom:0}
+.zones .z-slack{left:0;width:32%;background:#dcecf8}
+.zones .z-safe{left:32%;width:48%;background:#d6f3e4}
+.zones .z-danger{left:80%;width:20%;background:#ffe0dc}
+.zones .z-mark{position:absolute;top:-2px;bottom:-2px;width:3px;border-radius:2px;background:#123246;
+  box-shadow:0 0 0 1.5px #fff;transition:left .08s linear;z-index:2}
+.zones .z-flash{position:absolute;inset:0;background:#e05a4f;opacity:0;z-index:3}
+.zones.danger .z-flash{animation:flash .45s infinite alternate}
+@keyframes flash{from{opacity:0}to{opacity:.28}}
+.zoneLegend{display:flex;justify-content:space-between;font-size:8.5px;color:#9aafbd;margin-top:2px;font-weight:700}
+.dangerLine{position:relative;height:4px;border-radius:2px;background:#f1f5f8;margin-top:4px;overflow:hidden}
+.dangerLine b{display:block;height:100%;width:0%;background:#e05a4f;transition:width .1s linear}
+
+/* crank */
+.crank{position:relative;width:132px;height:132px;flex:0 0 auto;touch-action:none;user-select:none;
+  border-radius:50%;background:radial-gradient(circle at 34% 28%,#f7fdfe,#dbeef3 60%,#c7e3ea 100%);
+  box-shadow:inset 0 2px 6px rgba(255,255,255,.9),inset 0 -4px 10px rgba(30,80,100,.12),0 6px 16px rgba(20,70,90,.16);
+  display:grid;place-items:center}
+.crank::before{content:"";position:absolute;inset:9px;border-radius:50%;border:2px dashed rgba(15,155,152,.28)}
+.crank .rot{position:absolute;inset:0;border-radius:50%;will-change:transform}
+.crank .rot .spoke{position:absolute;left:50%;top:50%;width:2px;height:44px;background:rgba(15,155,152,.22);
+  transform-origin:50% 0;border-radius:2px}
+.crank .rot .s2{transform:rotate(120deg)}.crank .rot .s3{transform:rotate(240deg)}
+.crank .knob{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;
+  transform:translate(0,-47px);border-radius:50%;background:linear-gradient(160deg,#ffd97a,#f0a91f);
+  box-shadow:0 3px 8px rgba(150,100,10,.35),inset 0 2px 3px rgba(255,255,255,.75);border:2px solid #fff}
+.crank .core{position:relative;text-align:center;pointer-events:none;color:var(--teal-d);
+  width:68px;height:68px;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-content:center;
+  box-shadow:0 2px 8px rgba(20,70,90,.12),inset 0 0 0 1px rgba(15,155,152,.10)}
+.crank .core b{display:block;font-size:13px;font-weight:900;letter-spacing:-.3px}
+.crank .core small{display:block;font-size:9px;color:#7fa3ad;font-weight:700;margin-top:1px}
+.crank.turning{box-shadow:inset 0 2px 6px rgba(255,255,255,.9),0 0 0 4px rgba(15,155,152,.16),0 6px 16px rgba(20,70,90,.16)}
+.crank.turning .knob{filter:brightness(1.06)}
+
+/* ---------- tab bar ---------- */
+.tabbar{flex:0 0 auto;display:flex;background:#fff;border-top:1px solid var(--line);
+  padding:4px 8px calc(4px + env(safe-area-inset-bottom,0px));z-index:6}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 0;border-radius:12px;
+  font-size:16px;color:#9db2be;position:relative}
+.tab span{font-size:10.5px;font-weight:800;letter-spacing:-.2px}
+.tab.is-on{color:var(--teal-d);background:#f0faf9}
+.tab .dot{position:absolute;top:4px;right:calc(50% - 18px);width:6px;height:6px;border-radius:50%;background:var(--gold);display:none}
+.tab.has-new .dot{display:block}
+
+/* ---------- sheets ---------- */
+.sheet{position:absolute;inset:0;background:#f7fbfd;z-index:20;display:flex;flex-direction:column;
+  transform:translateY(102%);transition:transform .28s cubic-bezier(.22,.9,.3,1);border-radius:0}
+.sheet.is-on{transform:translateY(0)}
+.sheet-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px 8px;background:#fff;border-bottom:1px solid var(--line)}
+.sheet-head h2{font-size:17px;font-weight:900;letter-spacing:-.3px;display:flex;align-items:baseline;gap:7px}
+.sheet-head h2 .cnt{font-size:12px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums}
+.closeBtn{width:34px;height:34px;border-radius:11px;background:#f1f7fa;font-size:15px;display:grid;place-items:center;color:var(--ink2)}
+.seg{flex:0 0 auto;display:flex;gap:6px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line)}
+.seg button{flex:1;padding:8px 4px;border-radius:10px;font-size:12px;font-weight:800;color:var(--sub);background:#f3f8fa}
+.seg button b{font-size:10.5px;color:#9db2be;margin-left:3px;font-variant-numeric:tabular-nums}
+.seg button.is-on{background:var(--teal);color:#fff;box-shadow:0 3px 10px rgba(15,155,152,.25)}
+.seg button.is-on b{color:#cdeeed}
+.sheet-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 26px}
+.spot-group{margin-bottom:16px}
+.spot-group h3{font-size:11.5px;font-weight:900;color:var(--ink2);margin:0 2px 7px;display:flex;align-items:center;gap:6px}
+.spot-group h3 .bar{width:3px;height:11px;border-radius:2px;background:var(--teal)}
+.spot-group h3 small{font-weight:700;color:#9db2be;font-size:10px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:6px 6px 8px;
+  text-align:center;position:relative;overflow:hidden}
+.dcard .art{height:62px;display:grid;place-items:center}
+.dcard .art svg{width:100%;height:100%}
+.dcard .nm{font-size:10.5px;font-weight:800;letter-spacing:-.3px;line-height:1.25;margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.dcard .rr{font-size:8.5px;font-weight:800;margin-top:2px;opacity:.9}
+.dcard.locked .art{opacity:.75}
+.dcard.locked .nm{color:#a9bcc7}
+.dcard .badge{position:absolute;top:4px;right:4px;font-size:8px;font-weight:900;color:#fff;
+  background:var(--danger);padding:1.5px 4px;border-radius:5px}
+.dcard .gbadge{font-size:8.5px;font-weight:900;letter-spacing:-.5px;margin-top:1px}
+.dcard:active{transform:scale(.97)}
+.dcard.new{box-shadow:0 0 0 2px #ffd35c inset}
+.empty{padding:30px 10px;text-align:center;color:#a3b7c3;font-size:12px;font-weight:700;line-height:1.6}
+
+/* detail modal */
+.modal{position:absolute;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;
+  padding:18px;background:rgba(10,30,42,.42);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:.2s}
+.modal.is-on{opacity:1;pointer-events:auto}
+.modal .card{width:100%;max-width:360px;background:#fff;border-radius:22px;padding:18px 18px 16px;
+  box-shadow:0 24px 60px rgba(8,30,44,.35);transform:scale(.94);transition:.22s;max-height:calc(100% - 8px);overflow-y:auto}
+.modal.is-on .card{transform:scale(1)}
+.card h2{font-size:19px;font-weight:900;letter-spacing:-.4px;line-height:1.3;text-align:center}
+.card .sub{text-align:center;font-size:11.5px;color:var(--sub);font-weight:700;margin-top:3px}
+.chips{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;margin-top:7px}
+.chip{font-size:10px;font-weight:900;padding:3px 8px;border-radius:999px;background:#f1f6f9;color:var(--ink2)}
+.chip.rarity{color:#fff}
+.btnrow{display:flex;gap:8px;margin-top:14px}
+.btnrow button{flex:1;height:44px;border-radius:13px;font-size:13px;font-weight:800;background:#f1f7fa;color:var(--ink2)}
+.btnrow button.primary{background:linear-gradient(180deg,#17aaa6,#0c8b88);color:#fff;box-shadow:0 5px 14px rgba(12,139,136,.28)}
+.btnrow button:active{transform:scale(.98)}
+.primary.big{width:100%;height:48px;border-radius:14px;background:linear-gradient(180deg,#17aaa6,#0c8b88);
+  color:#fff;font-size:15px;font-weight:900;box-shadow:0 6px 16px rgba(12,139,136,.3);margin-top:10px}
+
+/* nickname */
+.nick .art{font-size:44px;text-align:center;margin:2px 0 6px}
+.nick h2{font-size:21px}
+.nick h2 span{font-size:11px;color:var(--teal);background:var(--teal-l);padding:2px 6px;border-radius:6px;vertical-align:3px;margin-left:4px}
+.nick p.tiny{font-size:10px;color:#a3b7c3;text-align:center;margin-top:9px;font-weight:700;line-height:1.5}
+.nick #nickErr{color:#d9534f;margin-top:6px;min-height:12px}
+.nickInput{width:100%;height:46px;margin-top:14px;border:1.5px solid #dbe8ef;border-radius:13px;
+  padding:0 14px;font-size:15px;font-weight:700;text-align:center;background:#f9fcfe;outline:none}
+.nickInput:focus{border-color:var(--teal);background:#fff}
+
+/* catch card */
+.catch .art{height:132px;margin:2px -4px 2px;display:grid;place-items:center}
+.catch .art svg{width:100%;height:100%}
+.catch-kicker{text-align:center;font-size:11px;font-weight:900;color:var(--teal);letter-spacing:1px}
+.catch-kicker.heavy{color:#c26a12}
+.catch .gag{font-size:12px;line-height:1.55;color:var(--ink2);background:#f7fbfd;border-radius:12px;
+  padding:10px 12px;margin-top:10px;text-align:center;font-weight:600}
+.catch-stats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.catch-stats div{flex:1;background:#f6fbfd;border-radius:11px;padding:7px 4px;text-align:center}
+.catch-stats span{display:block;font-size:9.5px;color:var(--sub);font-weight:800}
+.catch-stats b{display:block;font-size:13.5px;font-weight:900;margin-top:1px;font-variant-numeric:tabular-nums}
+.newbadge{display:inline-block;font-size:9.5px;font-weight:900;color:#fff;background:#e05a4f;
+  padding:2px 7px;border-radius:999px;margin-left:4px;vertical-align:2px}
+
+/* detail */
+.detail .art{height:120px;display:grid;place-items:center;margin:0 -4px}
+.detail .art svg{width:100%;height:100%}
+.detail .desc{font-size:12px;line-height:1.55;color:var(--ink2);text-align:center;margin-top:6px}
+.dstats{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+.dstats div{background:#f6fbfd;border-radius:11px;padding:8px;text-align:center}
+.dstats span{display:block;font-size:9.5px;font-weight:800;color:var(--sub)}
+.dstats b{display:block;font-size:13px;font-weight:900;margin-top:2px}
+
+/* shop */
+.eqcard{display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);
+  border-radius:16px;padding:11px 12px;margin-bottom:8px}
+.eqicon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;font-size:21px;flex:0 0 auto;background:#f0faf9}
+.eqbody{flex:1 1 auto;min-width:0}
+.eqbody h4{font-size:13.5px;font-weight:900;display:flex;align-items:center;gap:5px}
+.eqbody h4 em{font-style:normal;font-size:10px;font-weight:800;color:var(--teal-d);background:var(--teal-l);padding:1px 5px;border-radius:6px}
+.eqbody p{font-size:10.5px;color:var(--sub);font-weight:700;margin-top:2px;line-height:1.35}
+.pips{display:flex;gap:2.5px;margin-top:5px}
+.pips i{width:14px;height:4px;border-radius:2px;background:#e3eef4}
+.pips i.on{background:var(--teal)}
+.buyBtn{flex:0 0 auto;min-width:74px;height:38px;border-radius:11px;font-size:11.5px;font-weight:900;
+  background:linear-gradient(180deg,#17aaa6,#0c8b88);color:#fff;padding:0 9px;line-height:1.15}
+.buyBtn small{display:block;font-size:9.5px;font-weight:800;opacity:.9}
+.buyBtn:disabled{background:#edf3f6;color:#a9bcc7;box-shadow:none}
+.buyBtn.max{background:#fff5da;color:#a97a00}
+.shopHead{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid var(--line);
+  border-radius:14px;padding:11px 13px;margin-bottom:9px}
+.shopHead b{font-size:13.5px;font-weight:900}
+.shopHead span{font-size:11px;color:var(--sub);font-weight:700}
+.sellAll{height:36px;padding:0 12px;border-radius:10px;background:#fff1d6;color:#9a6a00;font-size:11.5px;font-weight:900}
+.invrow{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);
+  border-radius:13px;padding:7px 9px;margin-bottom:6px}
+.invrow .art{width:52px;height:36px;flex:0 0 auto;display:grid;place-items:center}
+.invrow .art svg{width:100%;height:100%}
+.invrow .meta{flex:1;min-width:0}
+.invrow .meta b{display:block;font-size:11.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.invrow .meta span{display:block;font-size:9.5px;color:var(--sub);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.invrow .price{font-size:11.5px;font-weight:900;color:#9a6a00;margin-right:2px;white-space:nowrap}
+.sellOne{width:44px;height:30px;border-radius:9px;background:#f0faf9;color:var(--teal-d);font-size:10.5px;font-weight:900;flex:0 0 auto}
+.footnote{text-align:center;font-size:10px;color:#a3b7c3;font-weight:700;line-height:1.6;padding:16px 10px 4px}
+
+/* spot sheet */
+.spotrow{display:flex;align-items:center;gap:11px;width:100%;background:#fff;border:1px solid var(--line);
+  border-radius:16px;padding:12px;margin-bottom:8px;text-align:left}
+.spotrow .art{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:25px;flex:0 0 auto}
+.spotrow .meta{flex:1;min-width:0}
+.spotrow .meta b{display:block;font-size:14px;font-weight:900}
+.spotrow .meta span{display:block;font-size:10.5px;color:var(--sub);font-weight:700;margin-top:2px;line-height:1.35}
+.spotrow .tail{flex:0 0 auto;font-size:11px;font-weight:900;color:var(--teal-d);text-align:right;line-height:1.3}
+.spotrow .tail small{display:block;font-size:9.5px;color:var(--sub);font-weight:800}
+.spotrow.locked{background:#f9fcfd}
+.spotrow.locked .meta b{color:#8fa6b4}
+.spotrow.cur{border-color:var(--teal);box-shadow:0 0 0 2px rgba(15,155,152,.12) inset}
+
+/* toast */
+.toast{position:absolute;left:50%;top:110px;transform:translate(-50%,-10px);background:rgba(14,44,60,.92);
+  color:#fff;font-size:12px;font-weight:700;padding:9px 15px;border-radius:999px;z-index:60;
+  opacity:0;transition:.22s;pointer-events:none;max-width:88%;text-align:center;line-height:1.35}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* help */
+.helpList{font-size:12px;line-height:1.7;color:var(--ink2)}
+.helpList li{margin:6px 0 6px 16px}
+.helpList b{color:var(--teal-d)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">🎣</div>
+      <div>
+        <h1>낚시의 손맛 <span class="ver">v1.0</span></h1>
+        <p>드카게임즈</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <div class="gold"><span>🪙</span><b id="goldNum">200</b></div>
+      <button class="icon-btn" id="muteBtn" aria-label="소리 켜기/끄기">🔊</button>
+    </div>
+  </header>
+
+  <section class="stage" id="stage">
+    <canvas id="scene"></canvas>
+    <div class="stage-ui">
+      <button class="spot-chip" id="spotChip"><span id="spotName">맑은 강가</span><i>▾</i></button>
+      <div class="dex-chip" id="dexChip">도감 <b id="dexCount">0</b><span id="dexTotal">/78</span></div>
+    </div>
+    <div class="stage-msg" id="stageMsg"></div>
+    <div class="bite-flash" id="biteFlash"><span>!</span></div>
+    <div class="fight-tip" id="fightTip"></div>
+  </section>
+
+  <section class="deck">
+    <div class="view is-on" data-view="idle">
+      <p class="hint" id="idleHint">입질이 오면 자동으로 릴링이 시작됩니다.</p>
+      <button class="castBtn" id="castBtn"><span class="ico">🎣</span><span>줄 던지기</span></button>
+    </div>
+
+    <div class="view" data-view="wait">
+      <p class="hint" id="waitHint">찌가 잠기는 순간을 기다리는 중…</p>
+      <div class="waitStatus"><span class="wdot"></span><span class="wdot"></span><span class="wdot"></span></div>
+      <button class="miniBtn" id="waitCancel">줄 회수</button>
+    </div>
+
+    <div class="view" data-view="reel">
+      <div class="reelWrap">
+        <div class="gauges">
+          <div>
+            <div class="g-top"><span class="g-label">남은 거리</span><span class="g-val" id="progVal">0.0 m</span></div>
+            <div class="track prog"><i class="fill" id="progFill"></i><em class="prog-fish" id="progFish">🐟</em></div>
+          </div>
+          <div>
+            <div class="g-top"><span class="g-label">텐션</span><span class="g-val" id="tenVal">34</span></div>
+            <div class="zones" id="tenTrack">
+              <i class="z-slack"></i><i class="z-safe"></i><i class="z-danger"></i>
+              <b class="z-mark" id="tenMarker"></b><i class="z-flash"></i>
+            </div>
+            <div class="zoneLegend"><span>느슨</span><span>안전</span><span>위험</span></div>
+            <div class="dangerLine"><b id="dangerFill"></b></div>
+          </div>
+        </div>
+        <div class="crank" id="crank" aria-label="릴 손잡이를 돌려 감기">
+          <div class="rot" id="crankRot">
+            <div class="spoke"></div><div class="spoke s2"></div><div class="spoke s3"></div>
+            <div class="knob"></div>
+          </div>
+          <div class="core"><b>돌려서<br>감기</b><small id="crankTurns">0.0바퀴</small></div>
+        </div>
+      </div>
+      <p class="hint small" id="reelHint">원형 릴을 손가락으로 빙글빙글 돌려 감아요</p>
+    </div>
+  </section>
+
+  <nav class="tabbar">
+    <button class="tab is-on" data-tab="fish">🎣<span>낚시</span></button>
+    <button class="tab" data-tab="dex" data-sheet="dexSheet">📖<span>도감</span></button>
+    <button class="tab" data-tab="shop" data-sheet="shopSheet">🛒<span>상점</span></button>
+  </nav>
+
+  <!-- 도감 -->
+  <div class="sheet" id="dexSheet">
+    <div class="sheet-head"><h2>도감 <span class="cnt" id="dexCnt">0/78</span></h2>
+      <button class="closeBtn" data-close aria-label="닫기">✕</button></div>
+    <div class="seg" id="dexSeg">
+      <button class="is-on" data-kind="fish">물고기</button>
+      <button data-kind="junk">병맛·탈것</button>
+    </div>
+    <div class="sheet-body" id="dexGrid"></div>
+  </div>
+
+  <!-- 상점 -->
+  <div class="sheet" id="shopSheet">
+    <div class="sheet-head"><h2>상점</h2>
+      <button class="closeBtn" data-close aria-label="닫기">✕</button></div>
+    <div class="seg" id="shopSeg">
+      <button class="is-on" data-shop="gear">장비 구매</button>
+      <button data-shop="sell">보관함 · 판매</button>
+    </div>
+    <div class="sheet-body" id="shopBody"></div>
+  </div>
+
+  <!-- 낚시터 -->
+  <div class="sheet" id="spotSheet">
+    <div class="sheet-head"><h2>낚시터</h2>
+      <button class="closeBtn" data-close aria-label="닫기">✕</button></div>
+    <div class="sheet-body" id="spotList"></div>
+  </div>
+
+  <!-- 닉네임 -->
+  <div class="modal" id="nickModal">
+    <div class="card nick">
+      <div class="art">🎣</div>
+      <h2>낚시의 손맛 <span>v1.0</span></h2>
+      <p class="sub">드카게임즈 · 낚시꾼 이름을 정해 주세요</p>
+      <input class="nickInput" id="nickInput" maxlength="10" placeholder="닉네임 (최대 10자)" autocomplete="off" value="">
+      <p class="tiny" id="nickErr"></p>
+      <button class="primary big" id="nickStart">시작하기</button>
+      <p class="tiny">기록은 이 기기에만 자동 저장됩니다.<br>물고기가 메인, 가끔 병맛이 낚입니다.</p>
+    </div>
+  </div>
+
+  <!-- 포획 -->
+  <div class="modal" id="catchModal">
+    <div class="card catch">
+      <div class="catch-kicker" id="catchKicker">포획 성공!</div>
+      <div class="art" id="catchArt"></div>
+      <h2 id="catchName"></h2>
+      <div class="chips" id="catchChips"></div>
+      <div class="catch-stats" id="catchStats"></div>
+      <p class="gag" id="catchGag"></p>
+      <div class="btnrow">
+        <button id="catchSell"><span id="catchSellLabel">바로 팔기</span> <span id="catchSalePrice">+0 G</span></button>
+        <button id="catchKeep" class="primary">보관하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 도감 상세 -->
+  <div class="modal" id="detailModal">
+    <div class="card detail">
+      <div class="art" id="detailArt"></div>
+      <h2 id="detailName"></h2>
+      <div class="chips" id="detailChips"></div>
+      <p class="desc" id="detailDesc"></p>
+      <div class="dstats" id="detailStats"></div>
+      <div class="btnrow"><button class="primary" id="detailClose">닫기</button></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+<script>/* ===== data ===== */
+const RARITY = {
+  common:    {label:'일반',      color:'#7b93a6', bg:'#eef4f8', weight:100},
+  uncommon:  {label:'고급',      color:'#2e9e6b', bg:'#e6f7ee', weight:44},
+  rare:      {label:'희귀',      color:'#3b7ddd', bg:'#e8f0ff', weight:13},
+  legend:    {label:'전설',      color:'#c98a0a', bg:'#fff5da', weight:3.0},
+  junk:      {label:'잡동사니',   color:'#8b7a68', bg:'#f5efe8', weight:0},
+  junkGood:  {label:'고급 잡동사니',color:'#2e9e6b', bg:'#e6f7ee', weight:0},
+  junkRare:  {label:'희귀 잡동사니',color:'#3b7ddd', bg:'#e8f0ff', weight:0},
+  junkLegend:{label:'전설 병맛',  color:'#c26a12', bg:'#fff1d6', weight:0}
+};
+
+const SPOTS = [
+  {id:'river',    name:'맑은 강가',   icon:'🌿', cost:0,     color1:'#d9f2ff', color2:'#bfe6f7',
+   desc:'잔잔한 물결 · 피라미부터 황금잉어까지'},
+  {id:'sea',      name:'바닷가 방파제', icon:'🧱', cost:1000,  color1:'#e2f6ff', color2:'#b6e2f7',
+   desc:'철컥철컥 · 고등어와 참돔, 그리고 경차'},
+  {id:'offshore', name:'먼바다 선상',  icon:'⛴️', cost:5000,  color1:'#e9f6ff', color2:'#bfe3f6',
+   desc:'배 위에서 · 참치와 청새치, 가끔 세단'},
+  {id:'deep',     name:'심해',        icon:'🌊', cost:18000, color1:'#0f2237', color2:'#0a1a2a',
+   desc:'빛도 닿지 않는 곳 · 전설과 KTX의 보고'}
+];
+
+const GEAR = {
+  rod:  {name:'낚싯대', icon:'🎣', base:320,  max:5, desc:'당기는 힘 +10%',  eff:'당기는 힘'},
+  reel: {name:'릴',     icon:'◎',  base:280,  max:5, desc:'감는 효율 +15%', eff:'감는 효율'},
+  line: {name:'낚싯줄', icon:'🧵', base:240,  max:5, desc:'텐션 완화 +7% · 버티기 +0.25초', eff:'텐션 완화'},
+  bait: {name:'미끼',   icon:'🪱', base:400,  max:5, desc:'희귀·전설·병맛 확률 +35%', eff:'희귀 확률'}
+};
+const GEAR_COST = {rod:[320,560,980,1700,2900], reel:[280,500,880,1520,2600],
+                   line:[240,430,760,1300,2200], bait:[400,720,1250,2100,3600]};
+
+const FIGHT = {
+  common:{pull:26, decay:30}, uncommon:{pull:33, decay:30},
+  rare:{pull:40, decay:30}, legend:{pull:48, decay:29},
+  junkLight:{pull:16, decay:34}, junkMid:{pull:26, decay:32},
+  junkRare:{pull:32, decay:31}, junkHeavy:{pull:40, decay:30},
+  carLight:{pull:44, decay:30}, car:{pull:52, decay:29},
+  carLux:{pull:56, decay:28}, truck:{pull:58, decay:28},
+  bigtruck:{pull:64, decay:27}, train:{pull:52, decay:32}
+};
+
+const FISH = [
+  /* ---- 맑은 강가 (15) ---- */
+  {id:'pirami', name:'피라미', spot:'river', rarity:'common', min:6, max:15, dist:14, price:8,
+   shape:'slim', tail:'fork', pattern:'stripe', c1:'#7ea8c9', c2:'#f2f8fc', fin:'#a9c6dd', pat:'#31566f', extras:[],
+   desc:'누구나 한 번쯤 잡아본 강가의 단골손님. 작아도 챔질 손맛은 진짜다.'},
+  {id:'songsari', name:'송사리', spot:'river', rarity:'common', min:3, max:7, dist:10, price:6,
+   shape:'slim', tail:'fork', pattern:'none', c1:'#b9c99a', c2:'#f8fbea', fin:'#cad8ab', pat:'#8a976d', extras:[],
+   desc:'손바닥만 한 물웅덩이에도 산다. 작아서 놓치기 일쑤지만 잡으면 왠지 기쁘다.'},
+  {id:'bungeo', name:'붕어', spot:'river', rarity:'common', min:12, max:32, dist:16, price:14,
+   shape:'round', tail:'fan', pattern:'none', c1:'#bb8d55', c2:'#f5e6c8', fin:'#cfa76e', pat:'#8a6134', extras:[],
+   desc:'느긋한 성격에 둥글둥글한 몸. 오늘도 아무 일 없었다는 듯 입질한다.'},
+  {id:'michuri', name:'미꾸라지', spot:'river', rarity:'common', min:8, max:20, dist:14, price:10,
+   shape:'eel', tail:'none', pattern:'none', c1:'#6b6144', c2:'#d8cba8', fin:'#5a5238', pat:'#47402c', extras:['whisker'],
+   desc:'진흙 속을 미끄러지듯 헤엄친다. 손에서 빠져나가는 재주가 일품.'},
+  {id:'ingeo', name:'잉어', spot:'river', rarity:'uncommon', min:35, max:78, dist:30, price:60,
+   shape:'oval', tail:'fan', pattern:'net', c1:'#c97a3f', c2:'#f8e4c2', fin:'#d9955f', pat:'#9a5828', extras:['whisker'],
+   desc:'강가의 어른. 큰 입으로 미끼를 통째로 삼킨다.'},
+  {id:'ssogari', name:'쏘가리', spot:'river', rarity:'uncommon', min:20, max:45, dist:26, price:75,
+   shape:'oval', tail:'fan', pattern:'band', c1:'#8a7a4e', c2:'#e9ddc1', fin:'#a39263', pat:'#4a3f22', extras:['spikes'],
+   desc:'무늬가 멋들어진 강의 지배자. 삐죽한 등지느러미를 조심하자.'},
+  {id:'bass', name:'배스', spot:'river', rarity:'uncommon', min:25, max:55, dist:28, price:65,
+   shape:'slim', tail:'fan', pattern:'vstripe', c1:'#6f8a5a', c2:'#edf2df', fin:'#8aa273', pat:'#3d4f33', extras:[],
+   desc:'입이 크고 성질이 급한 외래 손님. 루어를 물면 끝까지 간다.'},
+  {id:'rainbow', name:'무지개송어', spot:'river', rarity:'uncommon', min:25, max:55, dist:28, price:85,
+   shape:'slim', tail:'fork', pattern:'spot', c1:'#7b8f6b', c2:'#f7ecdc', fin:'#93a883', pat:'#3f5240', extras:['pinkstripe','rainbow'],
+   desc:'옆구리에 무지개가 흐른다. 차가운 물에서 만나면 운이 좋은 날.'},
+  {id:'megi', name:'메기', spot:'river', rarity:'rare', min:45, max:95, dist:38, price:150,
+   shape:'slim', tail:'round', pattern:'none', c1:'#5f5a50', c2:'#cfc7b8', fin:'#4a463e', pat:'#3a362f', extras:['whisker'],
+   desc:'수염으로 세상을 읽는 야행성 거구. 밤에 만나면 반갑다.'},
+  {id:'gamulchi', name:'가물치', spot:'river', rarity:'rare', min:40, max:95, dist:38, price:170,
+   shape:'oval', tail:'fan', pattern:'vstripe', c1:'#4f5a3a', c2:'#d8d2b4', fin:'#63704a', pat:'#2f3a22', extras:['teeth'],
+   desc:'강의 포식자. 숨을 쉬러 수면에 올라오는 순간이 챔질 타이밍.'},
+  {id:'yeoneo', name:'연어', spot:'river', rarity:'rare', min:50, max:110, dist:40, price:220,
+   shape:'slim', tail:'fork', pattern:'spot', c1:'#9aa8b0', c2:'#f7eef0', fin:'#b6c4cc', pat:'#5a6b78', extras:['pinkstripe'],
+   desc:'거슬러 오르는 강의 여행자. 몸에 새겨진 여정이 멋지다.'},
+  {id:'bamjangeo', name:'뱀장어', spot:'river', rarity:'rare', min:50, max:110, dist:40, price:180,
+   shape:'eel', tail:'none', pattern:'none', c1:'#4c5a3e', c2:'#b9b78f', fin:'#3e4a33', pat:'#2f3a26', extras:[],
+   desc:'미꾸라지보다 길고 용보다는 짧은 몸. 잘 빠져나가니 릴을 놓지 말 것.'},
+  {id:'sturgeon', name:'철갑상어', spot:'river', rarity:'legend', min:100, max:250, dist:58, price:1500,
+   shape:'sturgeon', tail:'fan', pattern:'none', c1:'#8a929b', c2:'#e6ebef', fin:'#6f7a85', pat:'#4a5560', extras:['scutes','whisker'],
+   desc:'갑옷을 입은 고대의 강자. 1억 년 전 모습 그대로다.'},
+  {id:'koi', name:'비단잉어', spot:'river', rarity:'legend', min:50, max:90, dist:48, price:1300,
+   shape:'koi', tail:'flowing', pattern:'net', c1:'#e2705e', c2:'#fff2ea', fin:'#f4a08f', pat:'#c94b3c', extras:['whisker'],
+   desc:'연못의 주인공. 헤엄치는 자태가 비단처럼 흐른다.'},
+  {id:'goldcarp', name:'황금잉어', spot:'river', rarity:'legend', min:70, max:130, dist:55, price:1200,
+   shape:'oval', tail:'fan', pattern:'net', c1:'#f2c14e', c2:'#fff6cf', fin:'#f7d97a', pat:'#c99a24', extras:['whisker','glow'],
+   desc:'강바닥에 황금빛이 번쩍인다. 잡으면 오늘 하루가 다 풀린다는 소문이 있다.'},
+
+  /* ---- 바닷가 방파제 (18) ---- */
+  {id:'anchovy', name:'멸치', spot:'sea', rarity:'common', min:8, max:15, dist:10, price:5,
+   shape:'slim', tail:'fork', pattern:'stripe', c1:'#9fb8c9', c2:'#f6fbfd', fin:'#b9cfdd', pat:'#4e6a7d', extras:[],
+   desc:'떼로 몰려다니는 은빛 가루. 한 마리 잡으면 왠지 백 마리 온 것 같다.'},
+  {id:'goby', name:'망둥어', spot:'sea', rarity:'common', min:8, max:20, dist:12, price:7,
+   shape:'goby', tail:'fan', pattern:'none', c1:'#b0a37a', c2:'#efe6cc', fin:'#c6b992', pat:'#6f6242', extras:[],
+   desc:'바닥에 붙어 다니는 큰 머리 친구. 방파제 돌 밑이 집이다.'},
+  {id:'jeongae', name:'전갱이', spot:'sea', rarity:'common', min:15, max:33, dist:14, price:12,
+   shape:'slim', tail:'fork', pattern:'stripe', c1:'#6f9fc4', c2:'#eef6fb', fin:'#9dc0d8', pat:'#e2bf3f', extras:[],
+   desc:'물빛을 닮은 은빛 몸. 방파제 입문용으로 딱이다.'},
+  {id:'godeungeo', name:'고등어', spot:'sea', rarity:'common', min:22, max:45, dist:16, price:16,
+   shape:'slim', tail:'fork', pattern:'wavestripe', c1:'#4f8f9e', c2:'#eef7f7', fin:'#78b0bc', pat:'#22454f', extras:[],
+   desc:'등에 새겨진 물결무늬가 명물. 굽기만 하면 맛있다는 건 비밀.'},
+  {id:'kkongchi', name:'꽁치', spot:'sea', rarity:'common', min:25, max:40, dist:16, price:18,
+   shape:'ribbon', tail:'fork', pattern:'none', c1:'#b9c9dc', c2:'#ffffff', fin:'#a3b6cc', pat:'#8a9fb8', extras:[],
+   desc:'길쭉한 은빛 몸. 통조림으로 만나든 낚시로 만나든 반갑다.'},
+  {id:'hakkkong', name:'학꽁치', spot:'sea', rarity:'common', min:20, max:35, dist:16, price:20,
+   shape:'needle', tail:'fork', pattern:'none', c1:'#c9d6e4', c2:'#ffffff', fin:'#b3c3d4', pat:'#7f95ab', extras:['bill'],
+   desc:'긴 부리가 학을 닮았다. 얇아서 챔질하면 물 위로 날아온다.'},
+  {id:'ureok', name:'우럭', spot:'sea', rarity:'uncommon', min:20, max:50, dist:24, price:55,
+   shape:'oval', tail:'fan', pattern:'spot', c1:'#a8674b', c2:'#f2dccb', fin:'#b87a5e', pat:'#5a3226', extras:[],
+   desc:'바위 틈에 숨는 붉은 얼굴. 한 번 물면 쉽게 놓지 않는다.'},
+  {id:'gwang', name:'광어', spot:'sea', rarity:'uncommon', min:30, max:78, dist:30, price:65,
+   shape:'flat', tail:'fan', pattern:'spot', c1:'#b9a074', c2:'#f6efdb', fin:'#c9b48a', pat:'#6a5638', extras:['bothEyes'],
+   desc:'납작한 몸으로 바닥에 딱 붙어 있다. 눈이 한쪽에 몰려 있는 게 포인트.'},
+  {id:'dodari', name:'도다리', spot:'sea', rarity:'uncommon', min:20, max:45, dist:26, price:60,
+   shape:'flat', tail:'fan', pattern:'spot', c1:'#8f7a58', c2:'#efe6cf', fin:'#a48f6b', pat:'#4f432e', extras:['bothEyes'],
+   desc:'광어와 닮았지만 무늬가 더 진하다. 바닥에 엎드려 손님을 기다린다.'},
+  {id:'bollak', name:'볼락', spot:'sea', rarity:'uncommon', min:15, max:30, dist:22, price:50,
+   shape:'oval', tail:'fan', pattern:'none', c1:'#8a4f45', c2:'#e8cfc6', fin:'#a8655a', pat:'#522a24', extras:['spikes'],
+   desc:'눈이 크고 등가시가 날카롭다. 방파제 밤낚시의 단골.'},
+  {id:'nongeo', name:'농어', spot:'sea', rarity:'uncommon', min:40, max:90, dist:32, price:95,
+   shape:'slim', tail:'fork', pattern:'stripe', c1:'#8fa8bb', c2:'#f2f7fa', fin:'#a9c0d0', pat:'#5d7791', extras:[],
+   desc:'은빛 몸에 검은 점. 하구에서 바다까지 오가는 여행자.'},
+  {id:'gamseong', name:'감성돔', spot:'sea', rarity:'uncommon', min:25, max:58, dist:26, price:80,
+   shape:'round', tail:'fan', pattern:'vstripe', c1:'#8a9098', c2:'#eef2f5', fin:'#a3aab1', pat:'#3f454b', extras:[],
+   desc:'줄무늬 조끼를 입은 방파제의 인기쟁이. 감성적인 손맛을 선사한다.'},
+  {id:'sumeong', name:'숭어', spot:'sea', rarity:'uncommon', min:30, max:70, dist:30, price:70,
+   shape:'slim', tail:'fork', pattern:'stripe', c1:'#9aa8ac', c2:'#f4f8f8', fin:'#b3c0c3', pat:'#5f6f73', extras:[],
+   desc:'물 위로 팔짝 뛰어오르는 곡예사. 놀라서 줄을 놓치지 말 것.'},
+  {id:'chamdom', name:'참돔', spot:'sea', rarity:'rare', min:35, max:78, dist:38, price:220,
+   shape:'oval', tail:'fork', pattern:'spot', c1:'#e07b8a', c2:'#ffe8ec', fin:'#e89aa6', pat:'#5b7fd0', extras:[],
+   desc:'붉은 몸에 파란 점이 박힌 바다의 귀빈. 도착하면 경례가 나온다.'},
+  {id:'galchi', name:'갈치', spot:'sea', rarity:'rare', min:60, max:125, dist:36, price:190,
+   shape:'ribbon', tail:'none', pattern:'none', c1:'#cfd9e6', c2:'#ffffff', fin:'#b9c8da', pat:'#9fb0c4', extras:['longfin','teeth'],
+   desc:'은빛 리본처럼 길게 이어진다. 이빨이 아주 날카로우니 조심.'},
+  {id:'muneo', name:'문어', spot:'sea', rarity:'rare', min:40, max:90, dist:36, price:240,
+   shape:'octopus', tail:'none', pattern:'none', c1:'#b56f66', c2:'#f0d6d0', fin:'#a05f57', pat:'#7d453e', extras:[],
+   desc:'여덟 팔로 돌을 끌어안고 도망간다. 물고기가 아니라 미안하지만 도감에 넣었다.'},
+  {id:'ojingeo', name:'오징어', spot:'sea', rarity:'rare', min:25, max:60, dist:32, price:200,
+   shape:'squid', tail:'none', pattern:'none', c1:'#c98f86', c2:'#f4dcd6', fin:'#b47a72', pat:'#8f5c56', extras:[],
+   desc:'먹물을 뿜고 사라진다. 손이 먹물투성이가 되는 건 덤.'},
+  {id:'golddom', name:'황금참돔', spot:'sea', rarity:'legend', min:60, max:112, dist:52, price:1400,
+   shape:'oval', tail:'fork', pattern:'spot', c1:'#f3c94b', c2:'#fff7d4', fin:'#f7d97a', pat:'#b98a12', extras:['glow'],
+   desc:'참돔이 황금빛으로 물들었다. 방파제에 이런 게 있다고?'},
+
+  /* ---- 먼바다 선상 (11) ---- */
+  {id:'samchi', name:'삼치', spot:'offshore', rarity:'common', min:35, max:82, dist:20, price:25,
+   shape:'slim', tail:'fork', pattern:'vstripe', c1:'#8aa9c0', c2:'#f1f7fa', fin:'#a9c2d4', pat:'#3d566e', extras:[],
+   desc:'쾌속으로 달리는 푸른 줄무늬. 챔질하는 순간 등에 줄이 선다.'},
+  {id:'mansae', name:'만새기', spot:'offshore', rarity:'uncommon', min:60, max:120, dist:30, price:110,
+   shape:'oval', tail:'crescent', pattern:'stripe', c1:'#5f9e8f', c2:'#fff3cf', fin:'#7fbfae', pat:'#e0a83c', extras:['bigdorsal'],
+   desc:'이마가 툭 튀어나온 바다의 미남. 등지느러미가 돛처럼 크다.'},
+  {id:'yellowfin', name:'황다랑어', spot:'offshore', rarity:'uncommon', min:50, max:115, dist:32, price:90,
+   shape:'oval', tail:'crescent', pattern:'none', c1:'#5a86b4', c2:'#eef4fa', fin:'#f2cf4a', pat:'#3e678f', extras:['finlets'],
+   desc:'노란 지느러미가 트레이드마크. 힘은 참치에 못 미치지만 충분히 묵직하다.'},
+  {id:'bangeo', name:'방어', spot:'offshore', rarity:'uncommon', min:55, max:125, dist:34, price:110,
+   shape:'oval', tail:'fork', pattern:'stripe', c1:'#b7a55c', c2:'#f8f2da', fin:'#c8b978', pat:'#e8c93f', extras:[],
+   desc:'겨울 바다의 기둥. 기름진 맛과 묵직한 몸싸움을 자랑한다.'},
+  {id:'busiri', name:'부시리', spot:'offshore', rarity:'uncommon', min:60, max:135, dist:34, price:100,
+   shape:'slim', tail:'fork', pattern:'stripe', c1:'#7f9db4', c2:'#f2f7f9', fin:'#9db9cc', pat:'#ead04c', extras:[],
+   desc:'방어와 닮은 형제. 몸빛이 조금 더 푸르다.'},
+  {id:'chamchi', name:'참치', spot:'offshore', rarity:'rare', min:100, max:260, dist:46, price:320,
+   shape:'oval', tail:'crescent', pattern:'none', c1:'#3b6b9c', c2:'#e9f1f8', fin:'#2d557d', pat:'#2a4a6c', extras:['finlets'],
+   desc:'먼바다의 폭군. 한 번 걸리면 팔이 남아나지 않는다.'},
+  {id:'gaebok', name:'개복치', spot:'offshore', rarity:'rare', min:90, max:230, dist:44, price:300,
+   shape:'round', tail:'fan', pattern:'spot', c1:'#8fa7b5', c2:'#eef3f5', fin:'#a9bfc9', pat:'#5f7482', extras:['flatface'],
+   desc:'둥글고 무기력한 바다의 미스터리. 잡아도 어딘가 미안해진다.'},
+  {id:'sangsang', name:'청상아리', spot:'offshore', rarity:'rare', min:120, max:280, dist:42, price:260,
+   shape:'shark', tail:'crescent', pattern:'none', c1:'#7d8f9e', c2:'#f0f4f6', fin:'#66798a', pat:'#4f6273', extras:['teeth'],
+   desc:'날렵한 상어. 이빨보다 먼저 눈이 마주친다.'},
+  {id:'gwisang', name:'귀상어', spot:'offshore', rarity:'rare', min:150, max:300, dist:44, price:300,
+   shape:'shark', tail:'crescent', pattern:'none', c1:'#6f8494', c2:'#e8eef2', fin:'#5c6f7e', pat:'#44535f', extras:['hammer'],
+   desc:'망치를 닮은 머리로 먹이를 찾는다. 옆에서 보면 정말 망치다.'},
+  {id:'cheongsaeng', name:'청새치', spot:'offshore', rarity:'legend', min:180, max:420, dist:64, price:1800,
+   shape:'bill', tail:'crescent', pattern:'stripe', c1:'#2f5f96', c2:'#e6eff8', fin:'#1f456f', pat:'#7fb3e0', extras:['bill','sail'],
+   desc:'긴 주둥이와 돛 같은 등지느러미. 먼바다 최고의 로망.'},
+  {id:'hwangsae', name:'황새치', spot:'offshore', rarity:'legend', min:200, max:450, dist:66, price:2100,
+   shape:'bill', tail:'crescent', pattern:'none', c1:'#3a4f66', c2:'#e9eef3', fin:'#22364d', pat:'#6f8fa8', extras:['bill','sail'],
+   desc:'청새치보다 더 길고 묵직하다. 바다의 검객이라는 별명이 있다.'},
+
+  /* ---- 심해 (11) ---- */
+  {id:'angler', name:'심해아귀', spot:'deep', rarity:'common', min:25, max:62, dist:18, price:45,
+   shape:'angler', tail:'round', pattern:'none', c1:'#6b5468', c2:'#dccbd6', fin:'#584359', pat:'#3b2c3a', extras:['lure','teeth'],
+   desc:'머리 위 초롱불로 먹이를 유혹한다. 어두운 곳에서 만나면 무섭다.'},
+  {id:'sangal', name:'산갈치', spot:'deep', rarity:'uncommon', min:90, max:260, dist:36, price:120,
+   shape:'ribbon', tail:'none', pattern:'none', c1:'#dfe6ee', c2:'#ffffff', fin:'#e2645f', pat:'#b9c6d4', extras:['longfin','redfin'],
+   desc:'은빛 몸에 붉은 지느러미. 심해의 긴 리본.'},
+  {id:'seongdae', name:'심해성대', spot:'deep', rarity:'uncommon', min:50, max:125, dist:30, price:110,
+   shape:'slim', tail:'round', pattern:'none', c1:'#c9b7b7', c2:'#f8f0f0', fin:'#b39d9d', pat:'#9a8484', extras:[],
+   desc:'창백한 분홍빛의 심해 거주민. 조명 없이는 보기 힘들다.'},
+  {id:'dotdom', name:'돗돔', spot:'deep', rarity:'rare', min:60, max:150, dist:40, price:280,
+   shape:'oval', tail:'fan', pattern:'spot', c1:'#8a4a44', c2:'#e8cfc6', fin:'#a8655a', pat:'#4f2724', extras:[],
+   desc:'붉은 몸의 심해 대어. 한 번 보면 잊히지 않는 얼굴이다.'},
+  {id:'ghostshark', name:'유령상어', spot:'deep', rarity:'rare', min:100, max:230, dist:46, price:350,
+   shape:'shark', tail:'crescent', pattern:'glow', c1:'#b9c9e6', c2:'#eef5ff', fin:'#9fb4d8', pat:'#7fe3ff', extras:['glow'],
+   desc:'빛을 머금은 듯 희부연 상어. 심해의 유령이라는 별명이 있다.'},
+  {id:'lantern', name:'초롱아귀', spot:'deep', rarity:'rare', min:15, max:42, dist:32, price:260,
+   shape:'oval', tail:'fork', pattern:'glow', c1:'#3f4a6b', c2:'#b3bdd9', fin:'#55628a', pat:'#7fe3ff', extras:['glowdots'],
+   desc:'몸에 작은 등불을 달고 다니는 심해의 작은 랜턴.'},
+  {id:'squid', name:'대왕오징어', spot:'deep', rarity:'rare', min:200, max:520, dist:48, price:400,
+   shape:'squid', tail:'none', pattern:'none', c1:'#c98f86', c2:'#f4dcd6', fin:'#b47a72', pat:'#8f5c56', extras:[],
+   desc:'심해 최대의 무척추동물. 물고기가 아니라서 미안하다.'},
+  {id:'greatwhite', name:'백상아리', spot:'deep', rarity:'legend', min:300, max:650, dist:60, price:2600,
+   shape:'shark', tail:'crescent', pattern:'none', c1:'#6f7d88', c2:'#eef2f5', fin:'#56646f', pat:'#3f4b55', extras:['teeth'],
+   desc:'바다의 최상위 포식자. 이빨 한 줄이면 설명이 끝난다.'},
+  {id:'whaleshark', name:'고래상어', spot:'deep', rarity:'legend', min:600, max:1200, dist:68, price:4200,
+   shape:'whale', tail:'fan', pattern:'spot', c1:'#4a6b7a', c2:'#dfeaf0', fin:'#5f8494', pat:'#b9d4dd', extras:['glow'],
+   desc:'세상에서 가장 큰 물고기. 온순하지만 크기가 반칙이다.'},
+  {id:'coelacanth', name:'실러캔스', spot:'deep', rarity:'legend', min:140, max:230, dist:58, price:2200,
+   shape:'oval', tail:'fan', pattern:'spot', c1:'#4f6b78', c2:'#d3e0e6', fin:'#3f5560', pat:'#e8f6ff', extras:['lobefin'],
+   desc:'4억 년을 버틴 살아있는 화석. 흰 점이 박힌 푸른 몸.'},
+  {id:'megalodon', name:'메갈로돈', spot:'deep', rarity:'legend', min:400, max:900, dist:66, price:5000,
+   shape:'shark', tail:'crescent', pattern:'none', c1:'#4a5a68', c2:'#dfe6ea', fin:'#394754', pat:'#2f3d48', extras:['teeth','glow'],
+   desc:'선사시대의 거대 상어. 잡히면 도감이 아니라 역사책에 남는다.'}
+];
+
+const JUNK = [
+  {id:'boot', name:'젖은 짝짝이 장화', spots:['river','sea'], rarity:'junk', min:22, max:30, price:0,
+   art:'boot', weight:14, fightKey:'junkLight', dist:8, turns:4,
+   gag:'왼발은 강 건너편에 두고 왔나 보다. 오른발만 주인을 찾는 중.'},
+  {id:'airpod', name:'왼쪽만 잃어버린 에어팟', spots:['river','sea','offshore'], rarity:'junk', min:3, max:4, price:0,
+   art:'earbud', weight:14, fightKey:'junkLight', dist:6, turns:3,
+   gag:'왼쪽이 없어서 음악이 반쪽이다. 오른쪽은 아직 페어링을 기다린다.'},
+  {id:'glove', name:'바닷속 고무장갑', spots:['sea','offshore'], rarity:'junk', min:28, max:32, price:2,
+   art:'glove', weight:12, fightKey:'junkLight', dist:8, turns:4,
+   gag:'설거지는 끝났는데 장갑은 아직 퇴근을 못 했다.'},
+  {id:'lid', name:'수심 100m 컵라면 뚜껑', spots:['offshore','deep'], rarity:'junk', min:12, max:14, price:3,
+   art:'lid', weight:12, fightKey:'junkLight', dist:9, turns:4,
+   gag:'면은 이미 바다로 다 퍼졌다. 뚜껑만 끝까지 버텼다.'},
+  {id:'bread', name:'길 잃은 붕어빵', spots:['river'], rarity:'junk', min:10, max:13, price:25,
+   art:'bread', weight:10, fightKey:'junkLight', dist:10, turns:4,
+   gag:'붕어인 척했지만 붕어가 아니었다. 팥은 아직 따뜻하다.'},
+  {id:'bike', name:'녹슨 삼천리 자전거', spots:['river','sea'], rarity:'junkGood', min:160, max:180, price:40,
+   art:'bike', weight:6, fightKey:'junkMid', dist:16, turns:6,
+   gag:'페달은 아직 돌아간다. 타고 가면 목적지가 아니라 정형외과다.'},
+  {id:'handset', name:'공중전화 수화기', spots:['sea','offshore'], rarity:'junk', min:22, max:26, price:45,
+   art:'handset', weight:7, fightKey:'junkMid', dist:12, turns:5,
+   gag:'받으면 파도 소리만 들린다. 요금은 누가 내는 걸까.'},
+  {id:'spoon', name:'반짝이는 은수저', spots:['sea'], rarity:'junkGood', min:19, max:21, price:90,
+   art:'spoon', weight:5, fightKey:'junkMid', dist:12, turns:5,
+   gag:'누군가의 은수저. 바다에서도 숟가락은 밥값을 한다.'},
+  {id:'envelope', name:'누군가의 월급봉투', spots:['sea','offshore'], rarity:'junkGood', min:16, max:18, price:180,
+   art:'envelope', weight:4, fightKey:'junkMid', dist:14, turns:6,
+   gag:'이름 없는 월급봉투. 이번 달은 바다가 대신 받아 갔다.'},
+  {id:'sock', name:'양말 한 짝', spots:['river','sea'], rarity:'junk', min:18, max:24, price:0,
+   art:'sock', weight:13, fightKey:'junkLight', dist:7, turns:3,
+   gag:'세탁기에서 실종된 그 짝이 여기서 나왔다. 아직 한 짝만 신으면 된다.'},
+  {id:'glasses', name:'누군가의 안경', spots:['river','sea'], rarity:'junkGood', min:13, max:15, price:30,
+   art:'glasses', weight:8, fightKey:'junkLight', dist:8, turns:4,
+   gag:'지금쯤 누가 앞이 안 보여서 더듬거리고 있을 듯.'},
+  {id:'rock', name:'그냥 돌', spots:['river','sea','deep'], rarity:'junk', min:20, max:40, price:1,
+   art:'rock', weight:16, fightKey:'junkHeavy', dist:20, turns:7,
+   gag:'묵직해서 대어인 줄 알고 열심히 감았다. 그냥 돌이다. 그래도 손맛은 있었다.'},
+  {id:'phone', name:'화면 깨진 스마트폰', spots:['sea','offshore','deep'], rarity:'junkGood', min:14, max:16, price:60,
+   art:'phone', weight:8, fightKey:'junkMid', dist:12, turns:5,
+   gag:'화면은 깨졌는데 알림은 아직 뜬다. 미확인 메시지 137개.'},
+  {id:'pc', name:'물먹은 컴퓨터 본체', spots:['deep'], rarity:'junkRare', min:42, max:48, price:420,
+   art:'pc', weight:4, fightKey:'junkHeavy', dist:28, turns:9,
+   gag:'수심 50m에서 건진 본체. 수냉 쿨링은 완비되어 있다. 전원은 안 들어온다.'},
+  {id:'crt', name:'고대 유물 CRT 모니터', spots:['deep'], rarity:'junkRare', min:38, max:44, price:350,
+   art:'crt', weight:5, fightKey:'junkRare', dist:20, turns:7,
+   gag:'전원을 켜면 DOS 부팅음이 들린다. 화면에는 "낚시 성공"만 뜬다.'},
+  {id:'toilet', name:'황금 변기', spots:['deep'], rarity:'junkLegend', min:70, max:80, price:3000,
+   art:'toilet', weight:1.4, fightKey:'junkHeavy', dist:30, turns:9,
+   gag:'심해 문명의 왕좌. 앉으면 물내림 소리가 3초간 여운을 남긴다.'},
+  {id:'btc', name:'잃어버린 비트코인 USB', spots:['deep'], rarity:'junkLegend', min:5, max:6, price:4000,
+   art:'usb', weight:1.2, fightKey:'junkRare', dist:26, turns:8,
+   gag:'복구 구문 12단어가 적힌 종이다. 아무도 그 주인을 찾지 못했다.'},
+
+  /* ---- 탈것 6종 ---- */
+  {id:'compact', name:'바다에 빠진 경차', spots:['river','sea'], rarity:'junkGood', min:330, max:370, price:380,
+   art:'compact', weight:7, fightKey:'carLight', dist:30, turns:8, car:true,
+   gag:'주차가 참 깊다. 차주는 아직 보험사와 통화 중이다.'},
+  {id:'sedan', name:'세월을 품은 세단', spots:['sea','offshore'], rarity:'junkGood', min:460, max:500, price:900,
+   art:'sedan', weight:4.5, fightKey:'car', dist:42, turns:10, car:true,
+   gag:'1980년대의 향기가 물씬 난다. 라디오에서는 아직 카세트가 돌아간다.'},
+  {id:'luxury', name:'심해에 잠든 고급세단', spots:['offshore'], rarity:'junkRare', min:500, max:540, price:1900,
+   art:'luxury', weight:2.6, fightKey:'carLux', dist:52, turns:12, car:true,
+   gag:'가죽 시트는 아직 촉촉하다. 시동은 안 걸리지만 품위는 살아 있다.'},
+  {id:'truck', name:'심해로 간 1톤 트럭', spots:['offshore','deep'], rarity:'junkRare', min:480, max:540, price:1500,
+   art:'truck', weight:3, fightKey:'truck', dist:58, turns:13, car:true,
+   gag:'짐칸에는 짐 대신 물고기가 가득하다. 배송은 영영 완료되지 않았다.'},
+  {id:'bigtruck', name:'심해 대형 덤프트럭', spots:['deep'], rarity:'junkLegend', min:800, max:900, price:5000,
+   art:'bigtruck', weight:1.8, fightKey:'bigtruck', dist:80, turns:15, car:true,
+   gag:'덤프를 올리면 심해가 쏟아진다. 기사님은 점심시간이라 부재중이다.'},
+  {id:'ktx', name:'심해에서 만난 KTX', spots:['deep'], rarity:'junkLegend', min:20000, max:20000, price:22000,
+   art:'ktx', weight:0.9, fightKey:'train', dist:200, turns:26, car:true,
+   gag:'200m짜리 심해 열차. 목적지는 "심해역"이고, 다음 역은 없다.'}
+];
+
+const ALL = FISH.concat(JUNK);
+const ALL_BY_ID = {};
+ALL.forEach(x => ALL_BY_ID[x.id] = x);
+const FISH_TOTAL = FISH.length;
+const JUNK_TOTAL = JUNK.length;
+</script>
+<script>/* ===== 2D SVG art ===== */
+const Art = (function(){
+  let uid = 0;
+  const R = (a,b)=> a + Math.random()*(b-a);
+
+  const SVG = (inner)=>`<svg viewBox="0 0 220 130" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${inner}</svg>`;
+
+  function geom(shape){
+    switch(shape){
+      case 'slim':    return {cx:110, cy:65, rx:56, ry:16};
+      case 'round':   return {cx:110, cy:65, rx:45, ry:32};
+      case 'flat':    return {cx:108, cy:68, rx:52, ry:33};
+      case 'ribbon':  return {cx:118, cy:65, rx:76, ry:9};
+      case 'needle':  return {cx:118, cy:65, rx:74, ry:7};
+      case 'shark':   return {cx:106, cy:65, rx:60, ry:25};
+      case 'angler':  return {cx:104, cy:70, rx:48, ry:25};
+      case 'bill':    return {cx:106, cy:65, rx:52, ry:23};
+      case 'whale':   return {cx:112, cy:66, rx:66, ry:30};
+      case 'sturgeon':return {cx:112, cy:65, rx:60, ry:21};
+      case 'goby':    return {cx:106, cy:68, rx:44, ry:23};
+      case 'koi':     return {cx:110, cy:65, rx:50, ry:26};
+      case 'eel':     return {cx:110, cy:65, rx:60, ry:14};
+      default:        return {cx:110, cy:65, rx:52, ry:26};
+    }
+  }
+
+  /* ---------- fish ---------- */
+  function fishSVG(sp){
+    const u = 'f'+(++uid);
+    const g = geom(sp.shape);
+    const {cx, cy, rx, ry} = g;
+    const headX = cx + rx;
+    const c1 = sp.c1, c2 = sp.c2, fin = sp.fin || c1, pat = sp.pat || '#00000033';
+    const ex = sp.extras || [];
+    const has = k => ex.indexOf(k) >= 0;
+
+    let defs = `<defs>
+      <linearGradient id="${u}g" x1="0" y1="0" x2="0.15" y2="1">
+        <stop offset="0" stop-color="${c1}"/><stop offset="0.55" stop-color="${c1}"/>
+        <stop offset="0.62" stop-color="${c2}"/><stop offset="1" stop-color="${c2}"/>
+      </linearGradient>
+      <linearGradient id="${u}f" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stop-color="${fin}" stop-opacity=".55"/><stop offset="1" stop-color="${fin}"/>
+      </linearGradient>
+      <clipPath id="${u}c"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath>
+      <radialGradient id="${u}glow"><stop offset="0" stop-color="${pat}" stop-opacity=".55"/>
+        <stop offset="1" stop-color="${pat}" stop-opacity="0"/></radialGradient>
+    </defs>`;
+
+    /* tail */
+    const tx = cx - rx + 6, ty = cy;
+    let tail = '';
+    if(sp.shape === 'eel'){
+      tail = '';
+    }else if(sp.tail === 'fork'){
+      tail = `<path d="M${tx},${ty} L${tx-36},${ty-24} C${tx-24},${ty-9} ${tx-24},${ty+9} ${tx-36},${ty+24} Z" fill="url(#${u}f)"/>`;
+    }else if(sp.tail === 'fan'){
+      tail = `<path d="M${tx},${ty} C${tx-24},${ty-26} ${tx-42},${ty-20} ${tx-44},${ty} C${tx-42},${ty+20} ${tx-24},${ty+26} ${tx},${ty} Z" fill="url(#${u}f)"/>`;
+    }else if(sp.tail === 'round'){
+      tail = `<ellipse cx="${tx-12}" cy="${ty}" rx="16" ry="18" fill="url(#${u}f)"/>`;
+    }else if(sp.tail === 'crescent'){
+      tail = `<path d="M${tx},${ty-18} C${tx-27},${ty-12} ${tx-27},${ty+12} ${tx},${ty+18} C${tx-11},${ty+7} ${tx-11},${ty-7} ${tx},${ty-18} Z" fill="url(#${u}f)"/>`;
+    }else if(sp.tail === 'flowing'){
+      tail = `<path d="M${tx},${ty-12} C${tx-30},${ty-34} ${tx-58},${ty-30} ${tx-46},${ty-4} C${tx-58},${ty+16} ${tx-28},${ty+34} ${tx},${ty+14} Z" fill="url(#${u}f)" opacity=".92"/>
+              <path d="M${tx},${ty-6} C${tx-22},${ty-18} ${tx-34},${ty-16} ${tx-30},${ty-2}" stroke="${c2}" stroke-width="3" fill="none" opacity=".7"/>`;
+    }
+
+    /* dorsal + pectoral */
+    let fins = '';
+    if(sp.shape !== 'eel' && sp.shape !== 'squid' && sp.shape !== 'octopus'){
+      const dh = has('sail') ? 44 : (has('bigdorsal') ? 34 : 16);
+      fins += `<path d="M${cx+6},${cy-ry+4} C${cx-6},${cy-ry-dh} ${cx-6-dh},${cy-ry-dh*0.6} ${cx-16-dh*0.4},${cy-ry+4} Z"
+                 fill="url(#${u}f)" opacity=".95"/>`;
+      fins += `<path d="M${cx-4},${cy+ry-3} C${cx-12},${cy+ry+12} ${cx-30},${cy+ry+8} ${cx-26},${cy+ry-2} Z" fill="url(#${u}f)" opacity=".8"/>`;
+      fins += `<ellipse cx="${cx+8}" cy="${cy+ry*0.45}" rx="${Math.max(8,rx*0.14)}" ry="${Math.max(6,ry*0.32)}"
+                 transform="rotate(28 ${cx+8} ${cy+ry*0.45})" fill="${fin}" opacity=".9"/>`;
+    }
+    if(has('longfin')){
+      fins += `<path d="M${cx-rx+8},${cy-ry+2} C${cx-rx*0.3},${cy-ry-30} ${cx+rx*0.5},${cy-ry-24} ${cx+rx-14},${cy-ry+2}"
+                 fill="none" stroke="${has('redfin')?'#e2645f':fin}" stroke-width="6" stroke-linecap="round" opacity=".9"/>`;
+      fins += `<path d="M${cx-rx+14},${cy-ry-2} C${cx-rx*0.4},${cy-ry-20} ${cx+rx*0.2},${cy-ry-18} ${cx+rx-30},${cy-ry-2}"
+                 fill="none" stroke="${has('redfin')?'#f08a86':fin}" stroke-width="3" stroke-linecap="round" opacity=".7"/>`;
+    }
+    if(has('finlets')){
+      fins += `<path d="M${cx-rx*0.35},${cy-ry-1} l6,-9 l5,9 Z M${cx-rx*0.12},${cy-ry-2} l6,-9 l5,9 Z M${cx+rx*0.1},${cy-ry-2} l6,-9 l5,9 Z" fill="#f2cf4a"/>`;
+      fins += `<path d="M${cx-rx*0.3},${cy+ry+1} l6,8 l5,-8 Z M${cx-rx*0.05},${cy+ry+1} l6,8 l5,-8 Z" fill="#f2cf4a"/>`;
+    }
+    if(has('spikes')){
+      for(let i=0;i<6;i++){
+        const px = cx-16+i*11;
+        fins += `<path d="M${px},${cy-ry+3} l5,-11 l5,11 Z" fill="${fin}" opacity=".95"/>`;
+      }
+    }
+
+    /* body */
+    let body = `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#${u}g)" stroke="${pat}" stroke-opacity=".22" stroke-width="1.4"/>`;
+    if(sp.shape === 'shark'){
+      body += `<path d="M${cx+rx-4},${cy-10} L${headX+20},${cy-1} L${cx+rx-4},${cy+9} Z" fill="url(#${u}g)"/>
+               <path d="M${cx+18},${cy-ry+3} l10,-24 l12,24 Z" fill="url(#${u}f)"/>`;
+    }
+    if(sp.shape === 'angler'){
+      body += `<ellipse cx="${headX-22}" cy="${cy-2}" rx="30" ry="27" fill="url(#${u}g)" stroke="${pat}" stroke-opacity=".2"/>`;
+    }
+    if(sp.shape === 'goby'){
+      body += `<ellipse cx="${headX-10}" cy="${cy-1}" rx="27" ry="24" fill="url(#${u}g)"/>`;
+    }
+    if(sp.shape === 'whale'){
+      body += `<path d="M${headX-4},${cy+4} q-6,12 -22,14 q34,10 56,-6" fill="${c2}" opacity=".85"/>`;
+    }
+    if(sp.shape === 'sturgeon'){
+      body += `<path d="M${headX-6},${cy-4} L${headX+18},${cy-1} L${headX-6},${cy+7} Z" fill="url(#${u}g)"/>`;
+    }
+    if(has('hammer')){
+      body += `<rect x="${headX-12}" y="${cy-24}" width="18" height="48" rx="8" fill="${c1}"/>
+               <ellipse cx="${headX-3}" cy="${cy-20}" rx="7" ry="6" fill="#e9eef2"/>
+               <ellipse cx="${headX-3}" cy="${cy+20}" rx="7" ry="6" fill="#e9eef2"/>`;
+    }
+
+    /* patterns */
+    let pattern = '';
+    const P = (s)=>s;
+    if(sp.pattern === 'stripe'){
+      pattern = `<path d="M${cx-rx+6},${cy+1} Q${cx},${cy-ry*0.32} ${cx+rx-10},${cy+1}" stroke="${pat}" stroke-width="${Math.max(4,ry*0.26)}" fill="none" opacity=".55" stroke-linecap="round"/>`;
+    }else if(sp.pattern === 'vstripe'){
+      let s='';
+      for(let i=0;i<5;i++){
+        const x = cx-rx*0.62+i*rx*0.31;
+        s += `<path d="M${x},${cy-ry} q6,${ry} 0,${ry*2}" stroke="${pat}" stroke-width="5" fill="none" opacity=".5"/>`;
+      }
+      pattern = s;
+    }else if(sp.pattern === 'wavestripe'){
+      let s='';
+      for(let i=0;i<6;i++){
+        const x = cx-rx*0.7+i*rx*0.28;
+        s += `<path d="M${x},${cy-ry} q-9,${ry*0.5} 0,${ry} t0,${ry}" stroke="${pat}" stroke-width="5" fill="none" opacity=".55"/>`;
+      }
+      pattern = s;
+    }else if(sp.pattern === 'spot'){
+      let s='';
+      const n = 9;
+      for(let i=0;i<n;i++){
+        const x = cx-rx*0.65 + (i*37% (rx*1.25));
+        const y = cy-ry*0.45 + (i*53% (ry*0.9));
+        s += `<circle cx="${x}" cy="${y}" r="${2.2+(i%3)*0.7}" fill="${pat}" opacity=".7"/>`;
+      }
+      pattern = s;
+    }else if(sp.pattern === 'band'){
+      pattern = `<path d="M${cx-rx*0.45},${cy-ry} l-16,${ry*2} M${cx+rx*0.1},${cy-ry} l-16,${ry*2}" stroke="${pat}" stroke-width="9" opacity=".38" fill="none"/>`;
+    }else if(sp.pattern === 'net'){
+      let s='';
+      for(let i=0;i<7;i++){
+        s += `<path d="M${cx-rx+14+i*16},${cy-ry} q8,${ry} 0,${ry*2}" stroke="${pat}" stroke-width="1.6" fill="none" opacity=".5"/>`;
+      }
+      for(let i=0;i<3;i++){
+        s += `<path d="M${cx-rx+4},${cy-ry*0.45+i*ry*0.5} q${rx},${-4} ${rx*2-8},0" stroke="${pat}" stroke-width="1.4" fill="none" opacity=".45"/>`;
+      }
+      pattern = s;
+    }else if(sp.pattern === 'glow'){
+      let s='';
+      for(let i=0;i<6;i++){
+        const x = cx-rx*0.6 + (i*41%(rx*1.15));
+        const y = cy-ry*0.3 + (i*29%(ry*0.7));
+        s += `<circle cx="${x}" cy="${y}" r="3" fill="${pat}" opacity=".85"/><circle cx="${x}" cy="${y}" r="7" fill="${pat}" opacity=".22"/>`;
+      }
+      pattern = s;
+    }
+
+    /* belly / stripes */
+    let extra = '';
+    if(has('pinkstripe')){
+      extra += `<path d="M${cx-rx+8},${cy+2} Q${cx},${cy-ry*0.12} ${cx+rx-12},${cy+2}" stroke="#e8798f" stroke-width="${Math.max(4,ry*0.2)}" fill="none" opacity=".75" stroke-linecap="round"/>`;
+    }
+    if(has('rainbow')){
+      extra += `<path d="M${cx-rx+10},${cy+6} Q${cx},${cy-2} ${cx+rx-14},${cy+6}" stroke="#7ec8e3" stroke-width="3" fill="none" opacity=".8"/>`;
+    }
+
+    /* eye(s) */
+    let eyes = '';
+    if(sp.shape === 'flat'){
+      eyes = `<circle cx="${headX-19}" cy="${cy-11}" r="6" fill="#fff" stroke="${pat}" stroke-opacity=".3"/>
+              <circle cx="${headX-19}" cy="${cy-11}" r="3" fill="#16222c"/>
+              <circle cx="${headX-8}" cy="${cy-9}" r="5.5" fill="#fff" stroke="${pat}" stroke-opacity=".3"/>
+              <circle cx="${headX-8}" cy="${cy-9}" r="2.8" fill="#16222c"/>`;
+    }else if(sp.shape === 'squid' || sp.shape === 'octopus'){
+      eyes = '';
+    }else{
+      const er = sp.shape === 'goby' ? 8 : (sp.shape === 'angler' ? 6 : 6);
+      eyes = `<circle cx="${headX-16}" cy="${cy-7}" r="${er}" fill="#fff" stroke="${pat}" stroke-opacity=".25"/>
+              <circle cx="${headX-15}" cy="${cy-7}" r="${er*0.52}" fill="#16222c"/>
+              <circle cx="${headX-16.5}" cy="${cy-8.5}" r="${er*0.2}" fill="#fff" opacity=".9"/>`;
+    }
+
+    /* mouth */
+    let mouth = '';
+    if(sp.shape === 'shark'){
+      mouth = `<path d="M${headX-18},${cy+12} q14,7 26,1" stroke="${pat}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+    }else if(sp.shape === 'whale'){
+      mouth = `<path d="M${headX-8},${cy+12} q-22,10 -44,4" stroke="${pat}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".7"/>`;
+    }else if(sp.shape !== 'squid' && sp.shape !== 'octopus'){
+      mouth = `<path d="M${headX-12},${cy+9} q8,4 14,-1" stroke="${pat}" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".8"/>`;
+    }
+    if(has('teeth')){
+      mouth += `<path d="M${headX-30},${cy+8} l4,-5 l4,5 l4,-5 l4,5 l4,-5 l4,5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linejoin="round"/>`;
+    }
+
+    /* extras */
+    let ext = '';
+    if(has('whisker')){
+      ext += `<path d="M${headX-16},${cy+11} q-16,8 -26,4 M${headX-16},${cy+13} q-14,14 -24,16" stroke="${pat}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".85"/>`;
+      ext += `<path d="M${cx+rx*0.55},${cy-ry+2} q-4,-18 -14,-20" stroke="${pat}" stroke-width="2" fill="none" stroke-linecap="round" opacity=".6"/>`;
+    }
+    if(has('bill')){
+      ext += `<path d="M${headX-6},${cy-4} L${headX+46},${cy+1} L${headX-6},${cy+7} Z" fill="${c1}" stroke="${pat}" stroke-opacity=".25"/>
+              <path d="M${headX+40},${cy+1} l-44,1" stroke="${c2}" stroke-width="1.4" opacity=".5"/>`;
+    }
+    if(has('sail')){
+      ext += `<path d="M${cx+2},${cy-ry+2} C${cx-10},${cy-ry-52} ${cx-64},${cy-ry-46} ${cx-48},${cy-ry+2} Z"
+                fill="url(#${u}f)" opacity=".96"/>`;
+    }
+    if(has('lure')){
+      ext += `<path d="M${headX-20},${cy-ry+2} q-2,-26 14,-28" stroke="${pat}" stroke-width="2" fill="none"/>
+              <circle cx="${headX-6}" cy="${cy-ry-26}" r="7" fill="#ffe27a"/>
+              <circle cx="${headX-6}" cy="${cy-ry-26}" r="14" fill="url(#${u}glow)" opacity=".8"/>`;
+    }
+    if(has('glowdots')){
+      ext += `<circle cx="${cx-10}" cy="${cy-ry-8}" r="5" fill="#8ff0ff"/><circle cx="${cx-10}" cy="${cy-ry-8}" r="10" fill="#8ff0ff" opacity=".25"/>
+              <circle cx="${cx+22}" cy="${cy-ry-4}" r="4" fill="#8ff0ff"/><circle cx="${cx+22}" cy="${cy-ry-4}" r="8" fill="#8ff0ff" opacity=".2"/>`;
+    }
+    if(has('lobefin')){
+      ext += `<ellipse cx="${cx-14}" cy="${cy+ry-2}" rx="12" ry="7" fill="${fin}" opacity=".9"/>
+              <ellipse cx="${cx+10}" cy="${cy+ry-3}" rx="10" ry="6" fill="${fin}" opacity=".9"/>`;
+    }
+    if(has('bothEyes')){ /* handled in flat */ }
+    if(has('flatface')){
+      ext += `<path d="M${headX-2},${cy-14} q-14,14 0,28" stroke="${pat}" stroke-width="2" fill="none" opacity=".4"/>`;
+    }
+    if(has('scutes')){
+      ext += `<path d="M${cx-30},${cy-ry+3} l6,-6 l6,6 M${cx-10},${cy-ry+2} l6,-6 l6,6 M${cx+12},${cy-ry+2} l6,-6 l6,6"
+                fill="none" stroke="${pat}" stroke-width="2" opacity=".6"/>`;
+    }
+
+    /* squid / octopus custom */
+    let special = '';
+    if(sp.shape === 'squid'){
+      special = `
+        <path d="M${cx-22},${cy-17} l-16,-9 l7,17 Z M${cx-22},${cy+11} l-16,9 l7,-17 Z" fill="url(#${u}f)"/>
+        <ellipse cx="${cx+8}" cy="${cy-3}" rx="40" ry="21" fill="url(#${u}g)" stroke="${pat}" stroke-opacity=".25" transform="rotate(-8 ${cx+8} ${cy-3})"/>
+        <ellipse cx="${headX-14}" cy="${cy+2}" rx="20" ry="18" fill="url(#${u}g)" stroke="${pat}" stroke-opacity=".2"/>
+        ${[0,1,2,3,4,5].map(i=>{
+          const sy = cy - 2 + i*4.6;
+          const ex = headX - 92 + (i%2)*12;
+          const ey = cy + 6 + i*7;
+          return `<path d="M${headX-24},${sy} C${headX-52},${cy-10+i*12} ${ex+22},${ey-14} ${ex},${ey}" stroke="${pat}" stroke-width="4.4" fill="none" stroke-linecap="round" opacity=".9"/>`;
+        }).join('')}
+        <path d="M${headX-24},${cy+4} C${headX-70},${cy-6} ${headX-86},${cy+6} ${headX-80},${cy+22}" stroke="${pat}" stroke-width="3" fill="none" stroke-linecap="round" opacity=".75"/>
+        ${[0,1,2,3,4,5].map(i=>`<circle cx="${headX-40-i*3}" cy="${cy+18+i*6}" r="1.8" fill="#fff" opacity=".55"/>`).join('')}
+        <circle cx="${headX-8}" cy="${cy-4}" r="7.5" fill="#fff"/><circle cx="${headX-7}" cy="${cy-4}" r="3.8" fill="#16222c"/>
+        <circle cx="${headX-8}" cy="${cy+12}" r="6.5" fill="#fff"/><circle cx="${headX-7}" cy="${cy+12}" r="3.2" fill="#16222c"/>`;
+    }else if(sp.shape === 'octopus'){
+      special = `
+        <ellipse cx="${cx+6}" cy="${cy-8}" rx="40" ry="34" fill="url(#${u}g)" stroke="${pat}" stroke-opacity=".18"/>
+        ${[0,1,2,3,4,5,6].map(i=>`<path d="M${cx+2+i*5},${cy+18} C${cx-6+i*8},${cy+44} ${cx-30+i*12},${cy+52} ${cx-38+i*14},${cy+30}"
+             stroke="${c1}" stroke-width="7" fill="none" stroke-linecap="round" opacity=".92"/>`).join('')}
+        <circle cx="${cx+20}" cy="${cy-14}" r="8" fill="#fff"/><circle cx="${cx+21}" cy="${cy-14}" r="4" fill="#16222c"/>
+        <circle cx="${cx+2}" cy="${cy-14}" r="7" fill="#fff"/><circle cx="${cx+3}" cy="${cy-14}" r="3.4" fill="#16222c"/>`;
+    }
+
+    const halo = has('glow') ? `<ellipse cx="${cx}" cy="${cy}" rx="${rx+10}" ry="${ry+12}" fill="url(#${u}glow)"/>` : '';
+
+    return SVG(`${defs}
+      <ellipse cx="110" cy="112" rx="78" ry="9" fill="#0e8f8f" opacity=".08"/>
+      ${halo}${tail}${fins}${body}
+      <g clip-path="url(#${u}c)">${pattern}${extra}</g>
+      ${special}${eyes}${mouth}${ext}
+      ${has('glow')?`<ellipse cx="${cx-rx*0.2}" cy="${cy-ry*0.4}" rx="${rx*0.22}" ry="${ry*0.16}" fill="#fff" opacity=".18"/>`:''}
+    `);
+  }
+
+  /* ---------- junk helpers ---------- */
+  const drop = (x,y,s)=>`<circle cx="${x}" cy="${y}" r="${s||3}" fill="#bfe6f7" opacity=".8"/>`;
+  const bubble = (x,y,s)=>`<circle cx="${x}" cy="${y}" r="${s||4}" fill="none" stroke="#bfe6f7" stroke-width="1.5" opacity=".7"/>`;
+  const sparkle = (x,y,s)=>`<path d="M${x},${y-s} L${x+s*0.28},${y-s*0.28} L${x+s},${y} L${x+s*0.28},${y+s*0.28} L${x},${y+s} L${x-s*0.28},${y+s*0.28} L${x-s},${y} L${x-s*0.28},${y-s*0.28} Z" fill="#fff8d0" opacity=".9"/>`;
+
+  function wheel(cx,cy,r,rim){
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#2b3742"/><circle cx="${cx}" cy="${cy}" r="${r*0.48}" fill="${rim||'#c7d3dc'}"/>
+            <circle cx="${cx}" cy="${cy}" r="${r*0.16}" fill="#8fa0ad"/>`;
+  }
+  function carBase(cx,cy){ /* water ground */
+    return `<ellipse cx="110" cy="118" rx="92" ry="8" fill="#0b6b7a" opacity=".14"/>`;
+  }
+
+  /* ---------- junk art ---------- */
+  function junkSVG(item){
+    const a = item.art;
+    let s = '';
+    switch(a){
+      case 'boot':
+        s = `<path d="M78,30 L118,30 L118,84 L82,84 Z" fill="#4f7a5a" rx="6"/>
+             <path d="M80,84 L80,100 Q80,112 96,112 L150,112 Q162,112 162,102 L162,94 L118,94 L118,84 Z" fill="#3f6449"/>
+             <path d="M80,108 Q110,114 162,108 L162,112 Q110,120 80,112 Z" fill="#26382d"/>
+             <rect x="92" y="46" width="18" height="14" rx="3" fill="#d0604f" transform="rotate(-8 101 53)"/>
+             <path d="M95,48 l14,10 M96,56 l12,-8" stroke="#f8e3dd" stroke-width="1.2" opacity=".8"/>
+             <path d="M86,34 L114,34" stroke="#3a5f45" stroke-width="3"/>
+             ${drop(150,120,3)}${drop(166,116,2)}${bubble(40,60,5)}`;
+        break;
+      case 'earbud':
+        s = `<rect x="104" y="52" width="15" height="40" rx="7.5" fill="#fff" stroke="#cdd9e3" stroke-width="1.5"/>
+             <ellipse cx="111.5" cy="47" rx="19" ry="16" fill="#fff" stroke="#cdd9e3" stroke-width="1.5"/>
+             <circle cx="111.5" cy="45" r="7" fill="#dfe8ef"/><circle cx="111.5" cy="45" r="2.6" fill="#a9bac7"/>
+             <rect x="107" y="76" width="9" height="3" rx="1.5" fill="#cdd9e3"/>
+             <ellipse cx="68" cy="56" rx="17" ry="14" fill="none" stroke="#b9cbd8" stroke-width="2" stroke-dasharray="4 5" opacity=".8"/>
+             <text x="64" y="62" font-size="16" font-weight="900" fill="#a9bac7" text-anchor="middle">?</text>
+             <path d="M68,74 q-8,10 -14,12" stroke="#b9cbd8" stroke-width="2" fill="none" stroke-dasharray="3 4" opacity=".7"/>
+             ${bubble(160,44,5)}${bubble(176,62,3)}`;
+        break;
+      case 'glove':
+        s = `<path d="M84,56 L84,42 Q84,34 92,34 Q100,34 100,42 L100,54 L106,54 L106,32 Q106,24 114,24 Q122,24 122,32 L122,54 L128,54 L128,34 Q128,26 136,26 Q144,26 144,34 L144,56 L150,56 L150,44 Q150,36 158,36 Q166,36 166,44 L166,88 Q166,106 148,108 L104,108 Q88,106 84,88 Z"
+                fill="#e8889a" stroke="#c96e80" stroke-width="1.5"/>
+             <path d="M84,72 Q104,78 122,72 Q142,66 166,74" stroke="#d97a8c" stroke-width="2" fill="none" opacity=".7"/>
+             ${drop(80,100,4)}${drop(60,90,3)}${bubble(50,70,4)}`;
+        break;
+      case 'lid':
+        s = `<ellipse cx="110" cy="66" rx="58" ry="40" fill="#cfd6dd" stroke="#aab6c2" stroke-width="2"/>
+             <ellipse cx="110" cy="64" rx="48" ry="31" fill="#e3e9ee"/>
+             <path d="M62,60 Q110,40 158,60" stroke="#e05a4f" stroke-width="9" fill="none" opacity=".85"/>
+             <path d="M80,50 q10,-8 22,-3 q10,4 20,-2" stroke="#c9a15e" stroke-width="4" fill="none" stroke-linecap="round"/>
+             <rect x="140" y="42" width="26" height="10" rx="4" fill="#b9c4ce" transform="rotate(18 153 47)"/>
+             ${sparkle(70,44,7)}${bubble(180,86,4)}${drop(150,96,3)}`;
+        break;
+      case 'bread':
+        s = `<path d="M40,66 C40,44 64,32 104,32 C144,32 168,44 168,66 C168,86 146,98 106,98 C66,98 40,86 40,66 Z" fill="#e0a349" stroke="#c1883a" stroke-width="2"/>
+             <path d="M158,50 L188,36 Q196,32 196,42 L196,78 Q196,88 188,84 L158,74 Z" fill="#d99a3f" stroke="#c1883a" stroke-width="2"/>
+             <path d="M62,66 Q88,58 112,66 M74,78 Q98,70 122,78" stroke="#c1883a" stroke-width="2" fill="none" opacity=".7"/>
+             <ellipse cx="58" cy="60" rx="8" ry="4" fill="#f6c977" opacity=".8"/>
+             <circle cx="132" cy="56" r="4" fill="#8a4a22" opacity=".7"/>
+             <path d="M80,26 q-6,-10 2,-16 M104,22 q-6,-10 2,-16 M128,26 q-6,-10 2,-16" stroke="#cfd9e3" stroke-width="3" fill="none" opacity=".7" stroke-linecap="round"/>`;
+        break;
+      case 'bike':
+        s = `<circle cx="58" cy="92" r="24" fill="none" stroke="#7a5a3f" stroke-width="5"/>
+             <circle cx="58" cy="92" r="24" fill="none" stroke="#a97e55" stroke-width="1.5" stroke-dasharray="3 5"/>
+             <circle cx="164" cy="92" r="24" fill="none" stroke="#7a5a3f" stroke-width="5"/>
+             <circle cx="58" cy="92" r="3" fill="#7a5a3f"/><circle cx="164" cy="92" r="3" fill="#7a5a3f"/>
+             <path d="M58,92 L92,58 L128,58 L164,92 M92,58 L112,92 L58,92 M58,58 L92,58 M112,92 L164,92" stroke="#8a5c3a" stroke-width="4" fill="none" stroke-linecap="round"/>
+             <path d="M120,58 L128,44 L146,44" stroke="#6b4a30" stroke-width="4" fill="none" stroke-linecap="round"/>
+             <path d="M92,58 L86,46 L104,46" stroke="#6b4a30" stroke-width="4" fill="none" stroke-linecap="round"/>
+             <path d="M112,92 L120,80 L136,80" stroke="#5d4029" stroke-width="5" fill="none" stroke-linecap="round"/>
+             <path d="M64,86 q-8,10 -2,20" stroke="#a97e55" stroke-width="2" fill="none" opacity=".7"/>
+             ${sparkle(150,52,6)}${drop(40,110,3)}`;
+        break;
+      case 'handset':
+        s = `<path d="M56,50 Q56,34 72,34 L96,34 Q104,34 104,44 L104,56 Q104,66 94,66 L84,66 Q78,66 78,74 L78,84 Q78,94 88,94 L98,94 Q108,94 108,104 L108,112"
+                fill="none" stroke="#2f6f72" stroke-width="6" stroke-linecap="round" opacity=".85"/>
+             <rect x="96" y="40" width="86" height="22" rx="11" fill="#2f6f72" transform="rotate(-8 139 51)"/>
+             <ellipse cx="102" cy="48" rx="16" ry="13" fill="#3a8487" transform="rotate(-8 102 48)"/>
+             <ellipse cx="176" cy="38" rx="16" ry="13" fill="#3a8487" transform="rotate(-8 176 38)"/>
+             <path d="M116,52 l50,-8" stroke="#7fb3b6" stroke-width="2" opacity=".8"/>
+             ${bubble(60,80,5)}${bubble(44,100,3)}`;
+        break;
+      case 'spoon':
+        s = `<ellipse cx="76" cy="58" rx="30" ry="21" fill="url(#spg)" stroke="#a9b8c6" stroke-width="1.6" transform="rotate(-24 76 58)"/>
+             <ellipse cx="73" cy="55" rx="20" ry="12" fill="#fff" opacity=".45" transform="rotate(-24 73 55)"/>
+             <path d="M100,70 L168,96" stroke="#c7d3dc" stroke-width="7" stroke-linecap="round"/>
+             <path d="M102,68 L166,93" stroke="#eef4f8" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+             <defs><linearGradient id="spg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f2f7fa"/><stop offset=".5" stop-color="#c2d0da"/><stop offset="1" stop-color="#eef4f8"/></linearGradient></defs>
+             ${sparkle(58,34,8)}${sparkle(184,104,5)}`;
+        break;
+      case 'envelope':
+        s = `<rect x="46" y="30" width="128" height="80" rx="6" fill="#f4efe2" stroke="#d8cdb4" stroke-width="2" transform="rotate(-4 110 70)"/>
+             <path d="M48,36 L110,76 L172,36" fill="none" stroke="#d8cdb4" stroke-width="3" transform="rotate(-4 110 70)"/>
+             <path d="M110,76 L110,106" stroke="#d8cdb4" stroke-width="2" opacity=".6" transform="rotate(-4 110 70)"/>
+             <circle cx="118" cy="66" r="17" fill="#e9dfc9" opacity=".9"/>
+             <text x="118" y="73" font-size="19" font-weight="900" fill="#a8905f" text-anchor="middle">₩</text>
+             <path d="M62,44 q14,8 26,4" stroke="#c9bfa6" stroke-width="2" fill="none" opacity=".7"/>
+             ${drop(170,96,3)}${bubble(40,52,4)}`;
+        break;
+      case 'sock':
+        s = `<path d="M86,26 L120,26 L120,78 Q120,90 132,94 L158,102 Q172,107 168,118 Q164,128 148,124 L104,110 Q88,105 88,88 Z"
+                fill="#5f7fa8" stroke="#4a668a" stroke-width="2"/>
+             <path d="M86,40 L120,40 M86,54 L120,54 M86,68 L120,68" stroke="#e8eef6" stroke-width="4" opacity=".9"/>
+             <path d="M150,108 Q160,112 158,120" stroke="#4a668a" stroke-width="2" fill="none"/>
+             ${bubble(60,60,5)}${drop(70,100,3)}`;
+        break;
+      case 'glasses':
+        s = `<g transform="rotate(-6 110 66)">
+             <rect x="34" y="44" width="60" height="44" rx="16" fill="none" stroke="#3d4a55" stroke-width="4"/>
+             <rect x="122" y="44" width="60" height="44" rx="16" fill="none" stroke="#3d4a55" stroke-width="4"/>
+             <path d="M94,60 q16,-8 28,0" stroke="#3d4a55" stroke-width="4" fill="none"/>
+             <path d="M34,54 L20,44 M182,54 L196,44" stroke="#3d4a55" stroke-width="4" stroke-linecap="round"/>
+             <path d="M38,48 L60,84 M52,46 L72,80" stroke="#eef6fb" stroke-width="2" opacity=".85"/>
+             <path d="M128,50 q10,14 4,30" stroke="#c9d7e2" stroke-width="2" fill="none" opacity=".7"/>
+             </g>
+             ${drop(160,96,3)}${bubble(48,100,4)}`;
+        break;
+      case 'rock':
+        s = `<path d="M46,92 Q38,72 58,58 Q74,42 100,44 Q128,40 146,56 Q170,68 166,88 Q164,104 140,106 L72,106 Q50,104 46,92 Z"
+                fill="#8d99a3" stroke="#6f7c87" stroke-width="2"/>
+             <path d="M64,64 Q82,52 104,54 Q124,52 138,62" stroke="#aeb9c2" stroke-width="3" fill="none" opacity=".9"/>
+             <path d="M96,66 Q112,60 126,68" stroke="#7a8792" stroke-width="2" fill="none" opacity=".7"/>
+             <path d="M62,84 Q92,76 118,84 Q138,88 152,82" stroke="#7a8792" stroke-width="2" fill="none" opacity=".5"/>
+             <path d="M74,54 q6,-8 16,-8 q-8,6 -10,12 Z" fill="#6b8a5a" opacity=".85"/>
+             <ellipse cx="110" cy="112" rx="62" ry="7" fill="#0b6b7a" opacity=".14"/>
+             ${bubble(176,74,4)}`;
+        break;
+      case 'phone':
+        s = `<rect x="78" y="16" width="64" height="104" rx="12" fill="#26313b" stroke="#151d24" stroke-width="2"/>
+             <rect x="84" y="26" width="52" height="82" rx="6" fill="#9fd6ea" opacity=".85"/>
+             <path d="M84,66 L104,44 L112,70 L130,50 L136,84" stroke="#f2fbff" stroke-width="1.6" fill="none" opacity=".8"/>
+             <path d="M88,32 L132,96 M98,28 L138,84" stroke="#e9f6fd" stroke-width="1" opacity=".5"/>
+             <rect x="100" y="19" width="20" height="4" rx="2" fill="#4a5a68"/>
+             <circle cx="110" cy="113" r="3" fill="#4a5a68"/>
+             <rect x="124" y="34" width="34" height="14" rx="7" fill="#fff" opacity=".95"/>
+             <text x="141" y="44" font-size="8" font-weight="800" fill="#3d4a55" text-anchor="middle">137</text>
+             ${bubble(60,84,4)}${drop(160,96,3)}`;
+        break;
+      case 'pc':
+        s = `<path d="M62,24 L134,24 L144,34 L144,104 L72,104 L62,94 Z" fill="#2b3540" stroke="#1a222a" stroke-width="2"/>
+             <rect x="70" y="32" width="62" height="64" rx="4" fill="#9fc7d8" opacity=".35"/>
+             <circle cx="88" cy="48" r="10" fill="none" stroke="#7fe3ff" stroke-width="2.4" opacity=".9"/>
+             <circle cx="112" cy="48" r="10" fill="none" stroke="#8fd8a8" stroke-width="2.4" opacity=".8"/>
+             <circle cx="88" cy="76" r="8" fill="none" stroke="#c8b6ff" stroke-width="2.2" opacity=".8"/>
+             <rect x="132" y="40" width="6" height="20" rx="3" fill="#4a5a68"/>
+             <path d="M144,96 q22,10 16,20" stroke="#1a222a" stroke-width="4" fill="none"/>
+             <path d="M64,100 q-14,6 -8,14" stroke="#1a222a" stroke-width="3" fill="none"/>
+             ${drop(152,70,3)}${drop(160,88,2)}${bubble(50,50,4)}`;
+        break;
+      case 'crt':
+        s = `<rect x="44" y="18" width="118" height="92" rx="8" fill="#d8d0bd" stroke="#b3a992" stroke-width="2"/>
+             <rect x="56" y="28" width="86" height="64" rx="5" fill="#1f3b2e"/>
+             <path d="M62,38 l10,0 M62,46 l16,0 M62,54 l8,0" stroke="#7fe3a8" stroke-width="2.4" opacity=".9"/>
+             <rect x="148" y="30" width="8" height="8" rx="1.5" fill="#8a8375"/>
+             <rect x="64" y="98" width="40" height="8" rx="2" fill="#b3a992"/>
+             <path d="M44,110 L162,110" stroke="#9a927f" stroke-width="4"/>
+             <path d="M162,96 q20,6 18,16" stroke="#b3a992" stroke-width="4" fill="none"/>
+             ${sparkle(60,22,6)}${bubble(182,58,4)}`;
+        break;
+      case 'toilet':
+        s = `<defs><linearGradient id="tg" x1="0" y1="0" x2="1" y2="1">
+             <stop offset="0" stop-color="#ffe89a"/><stop offset=".45" stop-color="#e8b62f"/><stop offset="1" stop-color="#b8871a"/></linearGradient></defs>
+             <rect x="78" y="18" width="64" height="40" rx="6" fill="url(#tg)" stroke="#a97a12" stroke-width="1.5"/>
+             <path d="M92,18 L104,6 L110,18 L116,6 L128,18" fill="#ffe89a" stroke="#a97a12" stroke-width="1.5"/>
+             <ellipse cx="110" cy="72" rx="44" ry="14" fill="url(#tg)" stroke="#a97a12" stroke-width="1.5"/>
+             <path d="M66,72 Q66,96 110,96 Q154,96 154,72 L146,72 Q146,88 110,88 Q74,88 74,72 Z" fill="url(#tg)" stroke="#a97a12" stroke-width="1.5"/>
+             <ellipse cx="110" cy="72" rx="27" ry="8" fill="#fff6cf" stroke="#c79a20" stroke-width="1"/>
+             <path d="M86,100 L86,112 L134,112 L134,100" fill="url(#tg)" stroke="#a97a12" stroke-width="1.5"/>
+             <path d="M74,64 q36,10 72,0" stroke="#fff6cf" stroke-width="2" fill="none" opacity=".8"/>
+             ${sparkle(160,42,7)}${sparkle(56,54,5)}${bubble(176,92,4)}`;
+        break;
+      case 'usb':
+        s = `<g transform="rotate(-10 110 66)">
+             <rect x="66" y="50" width="76" height="30" rx="6" fill="#2b3540" stroke="#151d24" stroke-width="2"/>
+             <rect x="142" y="56" width="26" height="18" rx="3" fill="#c7d3dc" stroke="#93a3ae" stroke-width="1.5"/>
+             <rect x="150" y="60" width="14" height="10" fill="#eef4f8"/>
+             <circle cx="86" cy="65" r="9" fill="#f0b429"/>
+             <text x="86" y="71" font-size="13" font-weight="900" fill="#7a5200" text-anchor="middle">₿</text>
+             <path d="M108,60 l14,0 M108,66 l18,0 M108,72 l10,0" stroke="#7fe3ff" stroke-width="2" opacity=".8"/>
+             </g>
+             ${sparkle(150,40,8)}${sparkle(52,86,5)}${bubble(60,40,4)}`;
+        break;
+      case 'compact':
+        s = `${carBase()}
+             <path d="M34,96 L36,74 Q38,64 50,62 L64,46 Q68,40 78,40 L118,40 Q128,40 134,48 L148,64 L180,68 Q190,70 190,80 L190,96 Q190,100 184,100 L40,100 Q34,100 34,96 Z"
+                fill="url(#cg)" stroke="#5f9b90" stroke-width="1.5"/>
+             <path d="M68,58 L80,46 L112,46 L124,58 Z" fill="#dff3f7" stroke="#8fc3c8" stroke-width="1.2"/>
+             <path d="M88,46 L88,58" stroke="#8fc3c8" stroke-width="1.2"/>
+             <path d="M36,78 L60,76" stroke="#8fd0c8" stroke-width="3"/>
+             <circle cx="62" cy="100" r="14" fill="#2b3742"/><circle cx="62" cy="100" r="6" fill="#c7d3dc"/>
+             <circle cx="162" cy="100" r="14" fill="#2b3742"/><circle cx="162" cy="100" r="6" fill="#c7d3dc"/>
+             <path d="M74,42 q8,-8 20,-6 q-10,4 -12,8 Z" fill="#6b8a5a" opacity=".9"/>
+             <path d="M186,74 l-6,-4 l0,10 Z" fill="#ffe7a0"/>
+             <defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c7ece4"/><stop offset="1" stop-color="#8fd0c8"/></linearGradient></defs>
+             ${bubble(44,66,4)}${bubble(58,50,3)}${drop(120,112,3)}`;
+        break;
+      case 'sedan':
+        s = `${carBase()}
+             <path d="M18,92 L20,74 Q22,64 36,62 L58,46 Q63,42 74,42 L142,42 Q152,42 158,48 L176,62 L200,66 Q208,68 208,78 L208,90 Q208,96 200,96 L26,96 Q18,96 18,92 Z"
+                fill="url(#sg2)" stroke="#7a5a34" stroke-width="1.5"/>
+             <path d="M62,58 L76,48 L106,48 L106,58 Z" fill="#e8f2f5" stroke="#b9cbd4" stroke-width="1.2"/>
+             <path d="M112,48 L138,48 L150,58 L112,58 Z" fill="#e8f2f5" stroke="#b9cbd4" stroke-width="1.2"/>
+             <rect x="20" y="72" width="188" height="4" fill="#d9c9a8"/>
+             <rect x="20" y="84" width="188" height="5" fill="#c7b48d" opacity=".8"/>
+             <circle cx="54" cy="96" r="13" fill="#2b3742"/><circle cx="54" cy="96" r="5.5" fill="#d9c9a8"/>
+             <circle cx="174" cy="96" r="13" fill="#2b3742"/><circle cx="174" cy="96" r="5.5" fill="#d9c9a8"/>
+             <path d="M196,72 q-8,0 -8,8" stroke="#f4e3b8" stroke-width="2.5" fill="none"/>
+             <path d="M70,44 q10,-10 26,-8 q-12,4 -16,10 Z" fill="#6b8a5a" opacity=".85"/>
+             <defs><linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9a97a"/><stop offset="1" stop-color="#a68455"/></linearGradient></defs>
+             ${bubble(36,60,4)}${drop(110,112,3)}`;
+        break;
+      case 'luxury':
+        s = `${carBase()}
+             <path d="M14,94 L18,78 Q20,68 34,66 L62,54 Q70,50 84,50 L146,50 Q160,50 168,56 L188,68 L206,72 Q212,74 212,82 L212,92 Q212,98 204,98 L22,98 Q14,98 14,94 Z"
+                fill="url(#lg2)" stroke="#1d2a36" stroke-width="1.5"/>
+             <path d="M66,62 L84,54 L112,54 L112,64 Z" fill="#dff3f7" opacity=".9"/>
+             <path d="M118,54 L144,54 L160,64 L118,64 Z" fill="#dff3f7" opacity=".9"/>
+             <rect x="16" y="80" width="196" height="2.5" fill="#e8eef2" opacity=".8"/>
+             <rect x="16" y="88" width="196" height="4" fill="#c9d3da" opacity=".5"/>
+             <circle cx="58" cy="98" r="13" fill="#202b35"/><circle cx="58" cy="98" r="6" fill="#dfe8ee"/>
+             <circle cx="176" cy="98" r="13" fill="#202b35"/><circle cx="176" cy="98" r="6" fill="#dfe8ee"/>
+             <path d="M204,78 l-10,-4 l0,9 Z" fill="#fff3c4"/>
+             <path d="M34,70 l24,-2" stroke="#7fe3ff" stroke-width="2" opacity=".7"/>
+             <defs><linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3f5568"/><stop offset=".5" stop-color="#22303d"/><stop offset="1" stop-color="#111a23"/></linearGradient></defs>
+             ${bubble(48,58,4)}${drop(120,112,3)}`;
+        break;
+      case 'truck':
+        s = `${carBase()}
+             <path d="M28,92 L28,72 Q28,64 38,64 L64,64 L64,88 L28,88 Z" fill="#e8eef2" stroke="#9fb0bc" stroke-width="1.5"/>
+             <path d="M42,64 Q44,50 60,50 Q76,50 78,64" fill="#eef4f8" stroke="#9fb0bc" stroke-width="1.5"/>
+             <path d="M46,66 L72,66 L72,80 L46,80 Z" fill="#cfe8f2" stroke="#9fb0bc"/>
+             <path d="M80,60 L196,60 L196,92 L80,92 Z" fill="#d9e3ea" stroke="#9fb0bc" stroke-width="1.5"/>
+             <path d="M80,60 L80,92 L196,92" fill="none" stroke="#b7c6d1" stroke-width="2"/>
+             <path d="M92,68 L184,68 M92,78 L184,78" stroke="#b7c6d1" stroke-width="2" opacity=".8"/>
+             <circle cx="60" cy="92" r="12" fill="#2b3742"/><circle cx="60" cy="92" r="5" fill="#c7d3dc"/>
+             <circle cx="150" cy="92" r="12" fill="#2b3742"/><circle cx="150" cy="92" r="5" fill="#c7d3dc"/>
+             <path d="M188,66 l-8,-4 l0,9 Z" fill="#ffe7a0"/>
+             ${bubble(44,48,4)}${drop(110,112,3)}`;
+        break;
+      case 'bigtruck':
+        s = `${carBase()}
+             <path d="M12,94 L14,74 Q16,64 30,62 L58,62 L58,88 L12,88 Z" fill="#4a5a68" stroke="#2b3742" stroke-width="1.5"/>
+             <path d="M26,62 Q28,46 44,46 Q60,46 62,62" fill="#5d6f7e" stroke="#2b3742" stroke-width="1.5"/>
+             <path d="M32,64 L56,64 L56,80 L32,80 Z" fill="#cfe8f2" stroke="#2b3742"/>
+             <path d="M64,54 L72,54 L72,92 L64,92 Z" fill="#2b3742"/>
+             <path d="M74,50 L204,50 L204,72 L74,72 Z" fill="#8a6b3f" stroke="#5f4526" stroke-width="1.5"/>
+             <path d="M74,50 L204,50 L204,54 L74,54 Z" fill="#a8834f"/>
+             <path d="M150,50 L150,72 M180,50 L180,72" stroke="#5f4526" stroke-width="1.5" opacity=".6"/>
+             <path d="M74,50 L74,72 L204,72 L204,88 L74,88 Z" fill="#6f532c" opacity=".45"/>
+             <circle cx="48" cy="94" r="14" fill="#1c252d"/><circle cx="48" cy="94" r="6" fill="#8f9dab"/>
+             <circle cx="120" cy="94" r="14" fill="#1c252d"/><circle cx="120" cy="94" r="6" fill="#8f9dab"/>
+             <circle cx="176" cy="94" r="14" fill="#1c252d"/><circle cx="176" cy="94" r="6" fill="#8f9dab"/>
+             <path d="M196,62 l-8,-5 l0,10 Z" fill="#ffe7a0"/>
+             ${bubble(40,42,4)}${drop(120,114,3)}`;
+        break;
+      case 'ktx':
+        s = `<defs><linearGradient id="kg" x1="0" y1="0" x2="0" y2="1">
+             <stop offset="0" stop-color="#f7fbfd"/><stop offset=".55" stop-color="#e4eef4"/><stop offset="1" stop-color="#b9cbd8"/></linearGradient></defs>
+             <path d="M6,86 Q6,62 30,58 L140,50 Q168,48 186,36 Q198,28 202,40 L202,66 Q202,74 190,76 L40,92 Q6,96 6,86 Z"
+                fill="url(#kg)" stroke="#93a9b8" stroke-width="1.5"/>
+             <path d="M8,78 Q30,70 60,68 L186,52" stroke="#2f6fa8" stroke-width="6" fill="none" opacity=".95"/>
+             <path d="M8,88 Q50,82 100,78 L196,68" stroke="#2f6fa8" stroke-width="2.5" fill="none" opacity=".7"/>
+             <path d="M40,62 L44,54 L92,50 L90,62 Z M100,58 L104,50 L152,47 L150,58 Z" fill="#bfe0f2" opacity=".9"/>
+             <path d="M164,52 L178,44 Q188,40 192,48 L182,58 Z" fill="#cfe8f2"/>
+             <path d="M198,42 l4,0 M198,48 l6,0" stroke="#fff" stroke-width="2" opacity=".9"/>
+             <path d="M6,100 L204,82" stroke="#8fa6b5" stroke-width="3"/>
+             <path d="M6,104 L204,86" stroke="#b7c6d1" stroke-width="1.4" opacity=".8"/>
+             <path d="M86,48 l10,-10 l14,0 l6,10" stroke="#4a5a68" stroke-width="2.4" fill="none"/>
+             <path d="M84,48 L120,45" stroke="#4a5a68" stroke-width="2.4"/>
+             <text x="52" y="80" font-size="12" font-weight="900" fill="#2f6fa8" font-family="sans-serif" opacity=".9">KTX</text>
+             <circle cx="24" cy="96" r="6" fill="#2b3742"/><circle cx="60" cy="96" r="6" fill="#2b3742"/><circle cx="100" cy="96" r="6" fill="#2b3742"/>
+             ${bubble(30,40,5)}${bubble(52,30,3)}${sparkle(170,26,7)}${drop(120,108,3)}`;
+        break;
+    }
+    return SVG(`<ellipse cx="110" cy="116" rx="90" ry="7" fill="#0b6b7a" opacity=".10"/>${s}`);
+  }
+
+  function svgFor(sp){
+    return sp.art ? junkSVG(sp) : fishSVG(sp);
+  }
+
+  return {svgFor, fishSVG, junkSVG};
+})();
+</script>
+<script>/* ===== scene (canvas) + sound ===== */
+const Sfx = (function(){
+  let ctx = null, master = null, muted = false, noiseBuf = null, reelTimer = 0, lastWarn = 0;
+  function init(){
+    if(ctx) return;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    try{
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = muted ? 0 : 0.85;
+      master.connect(ctx.destination);
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.2, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for(let i=0;i<d.length;i++) d[i] = (Math.random()*2-1) * (1 - i/d.length);
+    }catch(e){ ctx = null; }
+  }
+  function resume(){ if(ctx && ctx.state === 'suspended') ctx.resume(); }
+  function now(){ return ctx ? ctx.currentTime : 0; }
+  function tone(freq, dur, type, vol, delay, slideTo){
+    if(!ctx || muted) return;
+    const t0 = now() + (delay||0);
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, t0);
+    if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30,slideTo), t0+dur);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol||0.16, t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0+dur+0.02);
+  }
+  function noise(dur, vol, freq, delay){
+    if(!ctx || muted || !noiseBuf) return;
+    const t0 = now() + (delay||0);
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type='lowpass'; f.frequency.value = freq||1200;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(vol||0.12, t0+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    src.connect(f); f.connect(g); g.connect(master);
+    src.start(t0); src.stop(t0+dur+0.05);
+  }
+  const api = {
+    init, resume,
+    setMuted(b){ muted = !!b; if(master) master.gain.value = muted ? 0 : 0.85; },
+    isMuted(){ return muted; },
+    ui(){ tone(660,0.05,'triangle',0.06); },
+    cast(){ noise(0.32,0.10,2600); tone(520,0.28,'sine',0.05,0,240); },
+    splash(){ noise(0.26,0.16,900); tone(320,0.18,'sine',0.09,0,120); },
+    nibble(){ tone(280,0.06,'sine',0.06,0,220); },
+    bite(){ tone(880,0.09,'square',0.10); tone(1320,0.10,'square',0.09,0.10); noise(0.2,0.14,1000); },
+    hook(){ tone(300,0.12,'sawtooth',0.08,0,700); },
+    tick(){ reelTimer = 0; tone(1500+Math.random()*180,0.018,'square',0.035); noise(0.02,0.03,3000); },
+    crank(){ this.tick(); },
+    warn(){ const t=now(); if(t-lastWarn<0.55) return; lastWarn=t; tone(1200,0.07,'square',0.07); },
+    snap(){ noise(0.12,0.2,3200); tone(900,0.16,'sawtooth',0.10,0,120); },
+    win(big){
+      const notes = big ? [523,659,784,1046,1318] : [523,659,784,1046];
+      notes.forEach((f,i)=> tone(f, 0.22, 'triangle', 0.13, i*0.085));
+      if(big){ tone(1568,0.5,'sine',0.10,0.42); noise(0.5,0.05,5000,0.42); }
+    },
+    lose(){ tone(320,0.22,'sine',0.09,0,180); tone(210,0.3,'sine',0.08,0.16,120); },
+    sell(){ tone(980,0.06,'triangle',0.08); tone(1320,0.08,'triangle',0.07,0.06); },
+    buy(){ tone(760,0.07,'triangle',0.09); tone(1140,0.09,'triangle',0.08,0.07); },
+    unlock(){ [440,554,659,880].forEach((f,i)=>tone(f,0.2,'sine',0.1,i*0.08)); }
+  };
+  return api;
+})();
+
+const Scene = (function(){
+  let cv=null, ctx=null, W=360, H=300, dpr=1;
+  let raf=0, last=0;
+  const st = {
+    spot:'river', mode:'idle', t:0,
+    bob:{x:0,y:0,tx:0,ty:0,vis:false,fly:-1,fx:0,fy:0,dip:0},
+    ripples:[], parts:[], confetti:[], ambient:[], sparks:[], clouds:[], gulls:[],
+    tension:0, progress:0, holding:false, bend:0, shake:0, flash:0,
+    celebrate:0, failFlash:0, silhouette:null, nibbleT:0, biteGlow:0
+  };
+  const PAL = {
+    river:{sky1:'#e6f8ff', sky2:'#bde7f7', w1:'#7fd0e2', w2:'#2f8fae', w3:'#1d6a86', land:'#7fb089', sun:'#fff6c8'},
+    sea:{sky1:'#eaf9ff', sky2:'#b8e4f7', w1:'#74c6de', w2:'#2685a4', w3:'#13607d', land:'#6d8d9c', sun:'#fff3c0'},
+    offshore:{sky1:'#eefaff', sky2:'#c2e4f6', w1:'#62b2d0', w2:'#1c789b', w3:'#0f5875', land:'#5c7d8e', sun:'#fff1b8'},
+    deep:{sky1:'#102a42', sky2:'#071827', w1:'#13455f', w2:'#071f2e', w3:'#03121b', land:'#0a2333', sun:'#9fe8ff'}
+  };
+  const rand=(a,b)=>a+Math.random()*(b-a);
+
+  function resize(){
+    if(!cv) return;
+    const rect = cv.getBoundingClientRect();
+    W = Math.max(120, rect.width); H = Math.max(120, rect.height);
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  }
+
+  function init(canvas){
+    cv = canvas; ctx = cv.getContext('2d');
+    resize();
+    makeAmbient();
+    makeClouds();
+    last = performance.now();
+    if(!raf) raf = requestAnimationFrame(loop);
+  }
+
+  function makeClouds(){
+    st.clouds = [];
+    for(let i=0;i<3;i++) st.clouds.push({x:rand(0,1), y:rand(.06,.26), s:rand(.6,1.2), v:rand(.006,.016)});
+    st.gulls = [];
+    for(let i=0;i<2;i++) st.gulls.push({x:rand(-0.2,1), y:rand(.10,.24), v:rand(.02,.045), ph:rand(0,6)});
+  }
+  function makeAmbient(){
+    st.ambient = [];
+    for(let i=0;i<5;i++){
+      st.ambient.push({x:rand(0,1), y:rand(.55,.92), s:rand(.5,1.1), v:rand(.012,.035)*(Math.random()<.5?-1:1), ph:rand(0,6)});
+    }
+  }
+
+  function horizon(){ return st.spot==='deep' ? H*0.24 : H*0.40; }
+  function waterTop(){ return horizon(); }
+  function bobRest(){
+    const hy = horizon();
+    return {x: W*(st.spot==='offshore' ? .62 : .68), y: hy + (H-hy)*(st.spot==='deep'?.38:.42)};
+  }
+
+  function setSpot(id){
+    st.spot = id; makeClouds(); makeAmbient();
+    if(st.mode==='idle') st.bob.vis = false;
+  }
+  function setMode(m){ st.mode = m; if(m!=='idle' && m!=='waiting' && m!=='bite'){} }
+  function setGauge(tension, progress, holding){
+    st.tension = tension; st.progress = progress; st.holding = holding;
+  }
+
+  function splash(x,y,n,pw){
+    for(let i=0;i<n;i++){
+      const a = rand(-Math.PI, 0), sp = rand(30,140)*(pw||1);
+      st.parts.push({x,y,vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - rand(20,90), life:rand(.4,.9), t:0, r:rand(1.2,3.4), c:'#dff6ff'});
+    }
+    st.ripples.push({x,y,r:6,a:.55,w:2.4});
+    st.ripples.push({x,y,r:2,a:.7,w:1.6});
+  }
+  function ripple(x,y){
+    st.ripples.push({x,y,r:rand(4,10),a:rand(.25,.4),w:1.4});
+  }
+
+  function cast(){
+    const rest = bobRest();
+    const tip = rodTip();
+    st.bob.vis = true; st.bob.fly = 0;
+    st.bob.fx = tip.x; st.bob.fy = tip.y;
+    st.bob.tx = rest.x + rand(-W*0.06, W*0.08);
+    st.bob.ty = rest.y;
+    st.bob.x = tip.x; st.bob.y = tip.y;
+    st.bob.dip = -10;
+    Sfx.cast();
+  }
+  function onLanded(){
+    st.bob.fly = -1;
+    splash(st.bob.tx, st.bob.ty, 16, .8);
+    for(let i=0;i<3;i++) ripple(st.bob.tx, st.bob.ty);
+  }
+  function startBite(){
+    st.bob.dip = 6; st.biteGlow = 1;
+    splash(st.bob.x, st.bob.y+4, 22, 1.1);
+    Sfx.splash();
+  }
+  function nibble(){
+    st.bob.dip = 4; st.nibbleT = 0.32;
+    st.ripples.push({x:st.bob.x, y:st.bob.y+2, r:4, a:.3, w:1.2});
+  }
+  function startReel(){
+    st.mode = 'reel'; st.biteGlow = 0;
+    st.shake = 2;
+  }
+  function setFish(sp){
+    st.silhouette = {len: Math.min(1.5, 0.45 + (sp.max||40)/160), x: st.bob.x, y: st.bob.y+26, ang:0, vis:true, sp};
+  }
+  function crank(){
+    if(st.silhouette){ st.silhouette.ang += 0.35; }
+    if(Math.random()<.5){ const b=st.bob; st.parts.push({x:b.x+rand(-8,8),y:b.y+rand(0,6),vx:rand(-50,50),vy:rand(-90,-20),life:rand(.3,.6),t:0,r:rand(1,2.6),c:'#eaf9ff'}); }
+  }
+  function celebrate(sp, big){
+    st.celebrate = 1; st.biteGlow = 0;
+    const x = st.bob.x, y = st.bob.y;
+    splash(x,y,26,1.4);
+    for(let i=0;i<(big?90:36);i++){
+      st.confetti.push({x, y, vx:rand(-170,170), vy:rand(-260,-60), life:rand(.9,1.8), t:0,
+        r:rand(2,5), c: big?['#ffd34d','#ff8a5c','#7fe3ff','#fff','#b6ff9e'][i%5]:['#dff6ff','#fff','#9fe8ff'][i%3],
+        rot:rand(0,6), vr:rand(-6,6)});
+    }
+    Sfx.win(!!big);
+  }
+  function fail(){
+    st.failFlash = 1; st.shake = 6; st.silhouette = null;
+    Sfx.snap();
+    splash(st.bob.x, st.bob.y, 14, 1.2);
+  }
+  function reset(){
+    st.mode='idle'; st.bob.vis=false; st.bob.fly=-1; st.silhouette=null;
+    st.tension=0; st.progress=0; st.holding=false; st.confetti.length=0;
+  }
+
+  function rodTip(){
+    const bend = st.bend;
+    return {x: W*0.30 + bend*W*0.04, y: H*0.52 + bend*H*0.16 + Math.sin(st.t*2.2)*1.2};
+  }
+
+  /* ---------- draw ---------- */
+  function drawSky(p){
+    if(st.spot === 'deep'){
+      const g = ctx.createLinearGradient(0,0,0,H);
+      g.addColorStop(0,'#123049'); g.addColorStop(.45,'#0a1f30'); g.addColorStop(1,'#04121c');
+      ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+      // distant light shaft
+      ctx.save(); ctx.globalAlpha = .08; ctx.fillStyle = '#7fe3ff';
+      ctx.beginPath(); ctx.moveTo(W*.42,0); ctx.lineTo(W*.58,0); ctx.lineTo(W*.72,H); ctx.lineTo(W*.36,H); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      return;
+    }
+    const g = ctx.createLinearGradient(0,0,0,horizon()+4);
+    g.addColorStop(0,p.sky1); g.addColorStop(1,p.sky2);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,horizon()+4);
+    // sun glow
+    const sx = W*0.78, sy = horizon()-H*0.22;
+    const sg = ctx.createRadialGradient(sx,sy,2,sx,sy,H*0.22);
+    sg.addColorStop(0,'rgba(255,252,214,.85)'); sg.addColorStop(1,'rgba(255,252,214,0)');
+    ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(sx,sy,H*0.22,0,7); ctx.fill();
+    ctx.fillStyle = '#fff9d6'; ctx.beginPath(); ctx.arc(sx,sy,H*0.035,0,7); ctx.fill();
+    // clouds
+    ctx.fillStyle = 'rgba(255,255,255,.78)';
+    st.clouds.forEach(c=>{
+      const x = ((c.x + st.t*c.v) % 1.25) * W - W*.1, y = c.y*horizon();
+      const s = c.s * W*.05;
+      ctx.beginPath();
+      ctx.ellipse(x,y,s*2.0,s*0.55,0,0,7);
+      ctx.ellipse(x+s*.8,y-s*.28,s*1.1,s*0.5,0,0,7);
+      ctx.ellipse(x-s*.9,y-s*.16,s*1.0,s*0.42,0,0,7);
+      ctx.fill();
+    });
+    // hills / land line
+    if(st.spot === 'river'){
+      ctx.fillStyle = 'rgba(110,168,132,.55)';
+      ctx.beginPath(); ctx.moveTo(0,horizon());
+      ctx.quadraticCurveTo(W*.16,horizon()-H*.10, W*.34,horizon());
+      ctx.quadraticCurveTo(W*.52,horizon()-H*.06, W*.7,horizon());
+      ctx.lineTo(W,horizon()); ctx.lineTo(W,horizon()+4); ctx.lineTo(0,horizon()+4); ctx.closePath(); ctx.fill();
+    }else{
+      ctx.fillStyle = 'rgba(120,150,165,.45)';
+      ctx.fillRect(0,horizon()-2,W,3);
+      if(st.spot === 'sea'){
+        // distant breakwater
+        ctx.fillStyle = 'rgba(90,115,128,.65)';
+        for(let i=0;i<5;i++){ const bx=W*.06+i*W*.09; ctx.beginPath(); ctx.moveTo(bx,horizon()); ctx.lineTo(bx+W*.045,horizon());
+          ctx.lineTo(bx+W*.045,horizon()-H*.02); ctx.lineTo(bx,horizon()-H*.02); ctx.fill(); }
+      }
+      if(st.spot === 'offshore'){
+        // gulls
+        ctx.strokeStyle='rgba(60,80,95,.5)'; ctx.lineWidth=1.6;
+        st.gulls.forEach(gl=>{
+          const x = ((gl.x + st.t*gl.v) % 1.4) * W - W*.2, y = gl.y*horizon() + Math.sin(st.t*1.6+gl.ph)*9;
+          ctx.beginPath(); ctx.moveTo(x-7,y); ctx.quadraticCurveTo(x-3,y-4,x,y); ctx.quadraticCurveTo(x+3,y-4,x+7,y); ctx.stroke();
+        });
+      }
+    }
+  }
+
+  function drawWater(p){
+    const hy = horizon();
+    const g = ctx.createLinearGradient(0,hy,0,H);
+    g.addColorStop(0,p.w1); g.addColorStop(.55,p.w2); g.addColorStop(1,p.w3);
+    ctx.fillStyle = g; ctx.fillRect(0,hy,W,H-hy);
+    // wave bands
+    for(let i=0;i<4;i++){
+      const y = hy + (H-hy)*(0.12+i*0.16) + Math.sin(st.t*.8+i)*2;
+      ctx.beginPath();
+      ctx.strokeStyle = i===0 ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.16)';
+      ctx.lineWidth = i===0 ? 2 : 1.2;
+      for(let x=0;x<=W;x+=8){
+        const yy = y + Math.sin((x*0.035) + st.t*(1.1+i*.25) + i)*  (2.2+i*.8);
+        if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+      }
+      ctx.stroke();
+    }
+    // sparkles
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    for(let i=0;i<14;i++){
+      const ph = (st.t*0.55 + i*0.37) % 1;
+      const x = (i*97 % W + Math.sin(st.t+i)*8);
+      const y = hy + (H-hy)*(0.1 + (i%9)*0.095);
+      const a = Math.max(0, Math.sin(ph*Math.PI));
+      if(a>0.1){ ctx.globalAlpha = a*0.7; ctx.beginPath(); ctx.ellipse(x,y,2.6,1.1,0,0,7); ctx.fill(); }
+    }
+    ctx.globalAlpha = 1;
+    if(st.spot === 'deep'){
+      for(let i=0;i<26;i++){
+        const ph=(st.t*0.25+i*0.19)%1;
+        const x=(i*53 % W)+Math.sin(st.t*.6+i)*10;
+        const y=H - ph*(H*0.9);
+        ctx.globalAlpha = (1-ph)*0.5;
+        ctx.fillStyle = i%3===0?'#9fe8ff':'#7fe3ff';
+        ctx.beginPath(); ctx.arc(x,y,1.2+(i%3)*0.7,0,7); ctx.fill();
+      }
+      ctx.globalAlpha=1;
+    }
+    // ambient fish silhouettes
+    st.ambient.forEach((f,i)=>{
+      if(st.mode==='reel' && i%2===0) return;
+      const x = ((f.x + st.t*f.v*.02) % 1.3) * W - W*.15;
+      const y = hy + (H-hy)*f.y*0.9;
+      const s = f.s*(W*0.018);
+      ctx.save(); ctx.globalAlpha = st.spot==='deep'?.22:.14;
+      ctx.fillStyle = st.spot==='deep'?'#9fe8ff':'#083645';
+      ctx.beginPath(); ctx.ellipse(x,y,s*1.7,s*.7,0,0,7); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x-s*1.6,y); ctx.lineTo(x-s*2.4,y-s*.7); ctx.lineTo(x-s*2.4,y+s*.7); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    });
+  }
+
+  function drawBackdrop(){
+    if(st.spot === 'river'){
+      // reeds
+      ctx.save(); ctx.strokeStyle='rgba(50,105,70,.65)'; ctx.lineWidth=2;
+      for(let i=0;i<9;i++){
+        const x = i<5 ? 6+i*7 : W-6-(i-5)*7;
+        const h = H*randSeed(i)*0.16 + H*0.08;
+        ctx.beginPath(); ctx.moveTo(x,H); ctx.quadraticCurveTo(x+4,H-h*.6,x+(i%2?6:-6),H-h); ctx.stroke();
+      }
+      ctx.restore();
+    }
+    if(st.spot === 'sea'){
+      // tetrapods at corners
+      ctx.save(); ctx.fillStyle='rgba(70,92,104,.72)';
+      [[-6,H-6,26],[W+6,H-6,26]].forEach(([x,y,r])=>{
+        ctx.beginPath(); ctx.ellipse(x,y,r,r*0.8,0.4,0,7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x+ (x<0?18:-18),y-10,r*0.7,r*0.6,-0.3,0,7); ctx.fill();
+      });
+      ctx.restore();
+    }
+    if(st.spot === 'offshore'){
+      // boat rail
+      ctx.save(); ctx.strokeStyle='rgba(58,80,95,.85)'; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.moveTo(0,H-10); ctx.lineTo(W,H-14); ctx.stroke();
+      ctx.lineWidth=2.5;
+      for(let i=0;i<6;i++){ const x=i*W/5; ctx.beginPath(); ctx.moveTo(x,H-10); ctx.lineTo(x,H); ctx.stroke(); }
+      ctx.restore();
+    }
+    if(st.spot === 'deep'){
+      // rocks
+      ctx.save(); ctx.fillStyle='#061723';
+      ctx.beginPath(); ctx.moveTo(0,H);
+      ctx.quadraticCurveTo(W*.12,H-H*.16,W*.26,H); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(W,H);
+      ctx.quadraticCurveTo(W*.86,H-H*.2,W*.7,H); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function randSeed(i){ const x = Math.sin(i*127.1)*43758.5453; return x - Math.floor(x); }
+
+  function drawRod(tip){
+    tip = tip || rodTip();
+    const baseX = -W*0.08, baseY = H*1.05;
+    ctx.save();
+    ctx.lineCap='round';
+    ctx.strokeStyle = '#6b4a30'; ctx.lineWidth = 5;
+    ctx.beginPath(); ctx.moveTo(baseX,baseY);
+    ctx.quadraticCurveTo(W*0.10, H*0.78, tip.x, tip.y); ctx.stroke();
+    ctx.strokeStyle = '#8a6544'; ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(baseX,baseY);
+    ctx.quadraticCurveTo(W*0.10, H*0.78, tip.x, tip.y); ctx.stroke();
+    ctx.fillStyle='#3f4c58'; ctx.beginPath(); ctx.arc(W*0.12,H*0.83,6,0,7); ctx.fill();
+    ctx.fillStyle='#c7d3dc'; ctx.beginPath(); ctx.arc(W*0.12,H*0.83,2.4,0,7); ctx.fill();
+    if(st.mode==='idle' && !st.bob.vis){
+      ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.moveTo(tip.x,tip.y);
+      ctx.quadraticCurveTo(tip.x+6, tip.y+H*0.10, tip.x-4, tip.y+H*0.18); ctx.stroke();
+      ctx.strokeStyle='#c7d3dc'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(tip.x-6, tip.y+H*0.19, 3.2, Math.PI*0.15, Math.PI*0.9); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawRodAndLine(){
+    const tip = rodTip();
+    drawRod(tip);
+    const b = st.bob;
+    const lx = b.x, ly = b.y;
+    if(!b.vis) return;
+    const taut = st.mode==='reel';
+    const sag = taut ? 0 : Math.min(46, Math.hypot(lx-tip.x, ly-tip.y)*0.16) + Math.sin(st.t*2)*2;
+    ctx.strokeStyle = st.tension>80 ? 'rgba(255,120,110,.95)' : 'rgba(255,255,255,.72)';
+    ctx.lineWidth = st.tension>80 ? 1.8 : 1.2;
+    ctx.beginPath(); ctx.moveTo(tip.x,tip.y);
+    ctx.quadraticCurveTo((tip.x+lx)/2, (tip.y+ly)/2 + sag, lx, ly);
+    ctx.stroke();
+  }
+
+  function drawBobber(){
+    const b = st.bob;
+    if(!b.vis) return;
+    const lx = b.x;
+    const by = b.y + (b.fly>=0?0: Math.sin(st.t*2.4)*1.6 + b.dip);
+    ctx.save();
+    if(st.spot==='deep' || st.biteGlow>0){
+      const gg = ctx.createRadialGradient(lx,by,1,lx,by,22);
+      gg.addColorStop(0, st.biteGlow>0?'rgba(255,220,120,.75)':'rgba(160,240,255,.4)');
+      gg.addColorStop(1,'rgba(160,240,255,0)');
+      ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(lx,by,22,0,7); ctx.fill();
+    }
+    ctx.fillStyle = '#e05a4f';
+    ctx.beginPath(); ctx.arc(lx, by-4, 5.5, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(lx, by+1.5, 5.5, 0, Math.PI); ctx.fill();
+    ctx.strokeStyle='rgba(30,60,80,.25)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(lx,by,5.5,0,7); ctx.stroke();
+    ctx.fillStyle='#3d4a55'; ctx.fillRect(lx-0.8, by-12, 1.6, 6);
+    ctx.restore();
+    if(b.fly<0 && Math.random() < (st.mode==='reel'?.18:.035)) ripple(lx, by+2);
+  }
+
+  function drawSilhouette(){
+    const s = st.silhouette; if(!s) return;
+    const bp = st.bob;
+    const targetX = bp.x - (W*0.20)*(st.progress/100);
+    const targetY = bp.y + 30 + Math.sin(st.t*3)*5;
+    s.x += (targetX - s.x) * 0.06;
+    s.y += (targetY - s.y) * 0.06;
+    ctx.save();
+    ctx.globalAlpha = st.spot==='deep' ? .30 : .20;
+    ctx.fillStyle = st.spot==='deep' ? '#0b1b26' : '#08313f';
+    ctx.translate(s.x, s.y); ctx.rotate(Math.sin(s.ang)*0.12);
+    const L = 20 + s.len*20, Hh = 7 + s.len*5;
+    ctx.beginPath(); ctx.ellipse(0,0,L,Hh,0,0,7); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-L,0); ctx.lineTo(-L*1.45,-Hh*1.1); ctx.lineTo(-L*1.45,Hh*1.1); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,-Hh); ctx.lineTo(-6,-Hh*2.1); ctx.lineTo(10,-Hh*1.1); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function drawEffects(){
+    // ripples
+    st.ripples = st.ripples.filter(r=>{
+      r.r += 14*dt; r.a -= 0.55*dt;
+      if(r.a<=0) return false;
+      ctx.strokeStyle = `rgba(255,255,255,${Math.max(0,r.a)})`;
+      ctx.lineWidth = 1.2; ctx.beginPath(); ctx.ellipse(r.x,r.y,r.r,r.r*0.38,0,0,7); ctx.stroke();
+      return true;
+    });
+    // particles
+    st.parts = st.parts.filter(p=>{
+      p.t += dt; if(p.t>p.life) return false;
+      p.vy += 260*dt; p.x += p.vx*dt; p.y += p.vy*dt;
+      ctx.globalAlpha = Math.max(0, 1-p.t/p.life);
+      ctx.fillStyle = p.c; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill();
+      ctx.globalAlpha = 1;
+      return true;
+    });
+    // confetti
+    st.confetti = st.confetti.filter(c=>{
+      c.t += dt; if(c.t>c.life) return false;
+      c.vy += 420*dt; c.x += c.vx*dt; c.y += c.vy*dt; c.rot += c.vr*dt;
+      ctx.save(); ctx.globalAlpha = Math.max(0,1-c.t/c.life);
+      ctx.translate(c.x,c.y); ctx.rotate(c.rot);
+      ctx.fillStyle = c.c; ctx.fillRect(-c.r/2,-c.r/2,c.r,c.r*1.7);
+      ctx.restore();
+      return true;
+    });
+  }
+
+  let dt = 0.016;
+  function frame(now){
+    const d = Math.min(0.05, (now - last)/1000 || 0.016);
+    last = now; dt = d; st.t += d;
+    if(st.nibbleT>0){ st.nibbleT -= d; if(st.nibbleT<=0 && st.bob.dip===4) st.bob.dip = 0; }
+    if(!ctx) return;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    if(st.shake>0.2){ ctx.translate(rand(-st.shake,st.shake), rand(-st.shake,st.shake)); st.shake *= 0.88; }
+    const p = PAL[st.spot];
+    drawSky(p);
+    drawWater(p);
+    drawBackdrop();
+
+    // bobber flight
+    const b = st.bob;
+    if(b.fly >= 0){
+      b.fly += d/0.62;
+      const t = Math.min(1, b.fly);
+      const tip = rodTip();
+      const x = tip.x + (b.tx-tip.x)*t;
+      const y = tip.y + (b.ty-tip.y)*t - Math.sin(Math.PI*t)*H*0.28;
+      b.x = x; b.y = y;
+      if(t>=1){ onLanded(); }
+    }else if(b.vis){
+      const rest = {x:b.tx, y:b.ty};
+      b.x += (rest.x - b.x)*0.3;
+      b.y += (rest.y - b.y)*0.3;
+    }
+    // bend toward tension
+    st.bend += ((st.mode==='reel' ? Math.min(1, st.tension/95) : 0) - st.bend) * 0.08;
+    if(st.mode==='reel'){
+      b.dip = Math.sin(st.t*11)*1.8 + (st.tension>80?Math.sin(st.t*30)*2.4:0);
+      if(st.tension>80 && Math.random()<.06) st.shake = Math.max(st.shake, 2.2);
+      if(st.tension>90 && Math.random()<.1) st.shake = Math.max(st.shake, 3.4);
+    }
+
+    drawRodAndLine();
+    drawBobber();
+    if(st.mode==='reel') drawSilhouette();
+    drawEffects();
+
+    if(st.celebrate>0){
+      st.celebrate -= d*0.8;
+      ctx.save(); ctx.globalAlpha = Math.max(0,st.celebrate)*0.35;
+      const g=ctx.createRadialGradient(b.x,b.y,4,b.x,b.y,H*0.5);
+      g.addColorStop(0,'#fff8c9'); g.addColorStop(1,'rgba(255,248,201,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(b.x,b.y,H*0.6,0,7); ctx.fill(); ctx.restore();
+    }
+    if(st.failFlash>0){
+      st.failFlash -= d*1.6;
+      ctx.fillStyle = `rgba(224,90,79,${Math.max(0,st.failFlash)*0.25})`;
+      ctx.fillRect(0,0,W,H);
+    }
+    ctx.restore();
+  }
+
+  function loop(now){
+    frame(now);
+    raf = requestAnimationFrame(loop);
+  }
+
+  function destroy(){ if(raf) cancelAnimationFrame(raf); raf=0; }
+
+  return {init, resize, setSpot, setMode, setGauge, cast, startBite, nibble, startReel, setFish, crank, celebrate, fail, reset, destroy, state:st,
+    bobPos:()=>({x:st.bob.x,y:st.bob.y}), getMode:()=>st.mode};
+})();
+</script>
+<script>/* ===== game ===== */
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const SAVE_KEY = 'dcag_fishing_save_v1';
+  const JUNK_CHANCE = 0.16;
+
+  const DEFAULT = {
+    ver:'1.0', nick:'', gold:200, spot:'river', unlocked:['river'],
+    gear:{rod:0,reel:0,line:0,bait:0},
+    dex:{}, inv:[], muted:false, casts:0, caught:0, sold:0, plays:0
+  };
+  let S = load();
+
+  function load(){
+    try{
+      const raw = localStorage.getItem(SAVE_KEY);
+      if(!raw) return JSON.parse(JSON.stringify(DEFAULT));
+      const d = JSON.parse(raw);
+      const s = Object.assign(JSON.parse(JSON.stringify(DEFAULT)), d || {});
+      s.gear = Object.assign({rod:0,reel:0,line:0,bait:0}, d.gear||{});
+      s.dex = d.dex || {}; s.inv = Array.isArray(d.inv)?d.inv:[];
+      Object.keys(s.dex).forEach(k=>{ if(!s.dex[k] || typeof s.dex[k]!=='object') s.dex[k]={n:0,max:0,g:2}; if(!s.dex[k].g) s.dex[k].g=2; });
+      s.inv.forEach(it=>{ if(!it.g) it.grade = 2; });
+      s.unlocked = Array.isArray(d.unlocked)&&d.unlocked.length?d.unlocked:['river'];
+      if(!SPOTS.some(x=>x.id===s.spot && s.unlocked.includes(x.id))) s.spot='river';
+      s.gold = Math.max(0, Number(s.gold)||0);
+      return s;
+    }catch(e){ return JSON.parse(JSON.stringify(DEFAULT)); }
+  }
+  let saveT = 0;
+  function save(){
+    clearTimeout(saveT);
+    saveT = setTimeout(()=>{ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }, 250);
+  }
+  function saveNow(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+
+  const g = {
+    mode:'idle', pending:null, biteAt:0, biteUntil:0, nibbleAt:0,
+    fight:null, rem:0, total:0, tension:0, dangerT:0, dangerLimit:2,
+    lastCrank:0, crankDeg:0, tickAcc:0, keyHeld:false, lastFrame:0, rotRate:0
+  };
+  let currentCatch = null;
+  let dexKind = 'fish', shopTab = 'gear';
+
+  /* ---------- helpers ---------- */
+  const fmt = n => Math.round(n).toLocaleString('ko-KR');
+  function toast(msg, ms){
+    const t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('on'), ms||1900);
+  }
+  function say(msg, ms){
+    const el = $('stageMsg'); el.textContent = msg; el.classList.add('on');
+    clearTimeout(say._t); say._t = setTimeout(()=>el.classList.remove('on'), ms||2400);
+  }
+  function rarityOf(sp){ return RARITY[sp.rarity] || RARITY.common; }
+  function isFish(sp){ return !sp.art; }
+  function bigCatch(sp){ return sp.rarity==='legend' || sp.rarity==='junkLegend' || (sp.price>=1000) || !!sp.car; }
+  function gearCost(k){ const lv=S.gear[k]||0; return lv>=GEAR.max?0:(GEAR_COST[k][lv]||0); }
+
+  /* ---------- render ---------- */
+  function renderGold(){ $('goldNum').textContent = fmt(S.gold); }
+  function renderMute(){ $('muteBtn').textContent = S.muted ? '🔇' : '🔊'; }
+  function renderSpot(){
+    const sp = SPOTS.find(x=>x.id===S.spot) || SPOTS[0];
+    $('spotName').textContent = sp.name;
+    $('spotChip').style.opacity = 1;
+  }
+  function dexCounts(){
+    const f = FISH.filter(x=>S.dex[x.id]).length;
+    const j = JUNK.filter(x=>S.dex[x.id]).length;
+    return {f, j, total:f+j};
+  }
+  function renderDexChip(){
+    const c = dexCounts();
+    $('dexCount').textContent = c.total;
+    $('dexTotal').textContent = `/${FISH_TOTAL+JUNK_TOTAL}`;
+  }
+  function renderHeader(){
+    renderGold(); renderMute(); renderSpot(); renderDexChip();
+    $('idleHint').innerHTML = S.nick ? `<b>${escapeHtml(S.nick)}</b>님, 오늘 물때는 좋아요.` : '입질이 오면 자동으로 릴링이 시작됩니다.';
+  }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  /* ---------- encounter ---------- */
+  function pickWeighted(list, wf){
+    let total = 0;
+    const ws = list.map(x=>{ const w = Math.max(0, wf(x)); total += w; return w; });
+    if(total<=0) return list[0];
+    let r = Math.random()*total;
+    for(let i=0;i<list.length;i++){ r -= ws[i]; if(r<=0) return list[i]; }
+    return list[list.length-1];
+  }
+  function rollEncounter(){
+    const junkList = JUNK.filter(j=>j.spots.includes(S.spot));
+    if(junkList.length && Math.random() < JUNK_CHANCE){
+      return pickWeighted(junkList, j=>{
+        let w = j.weight;
+        if(j.rarity==='junkGood' || j.rarity==='junkRare' || j.rarity==='junkLegend') w *= (1 + 0.20*S.gear.bait);
+        return w;
+      });
+    }
+    const fishList = FISH.filter(f=>f.spot===S.spot);
+    return pickWeighted(fishList, f=>{
+      let w = RARITY[f.rarity].weight;
+      if(f.rarity==='rare' || f.rarity==='legend') w *= (1 + 0.35*S.gear.bait);
+      return w;
+    });
+  }
+  function rollSize(sp){
+    if(sp.min===sp.max) return sp.min;
+    const r = Math.pow(Math.random(), 1.65);
+    return sp.min + (sp.max-sp.min)*r;
+  }
+  function priceOf(sp, size){
+    if(!sp.price) return 0;
+    if(!isFish(sp)) return sp.price;
+    const ratio = (size-sp.min)/Math.max(1,(sp.max-sp.min));
+    return Math.max(1, Math.round(sp.price*(0.72+0.58*ratio)));
+  }
+
+  /* ---- 개체 등급 1~5 ---- */
+  const GRADES = {
+    1:{mult:0.7, label:'흠집',   color:'#8d9aa5', bg:'#eef2f5'},
+    2:{mult:1.0, label:'보통',   color:'#4f86ad', bg:'#e9f2f8'},
+    3:{mult:1.5, label:'좋음',   color:'#2e9e6b', bg:'#e6f7ee'},
+    4:{mult:2.3, label:'특급',   color:'#7a56c9', bg:'#efe9fb'},
+    5:{mult:4.0, label:'완벽',   color:'#c2870a', bg:'#fff4d3'}
+  };
+  function rollGrade(sp, sizeRatio){
+    const q = isFish(sp) ? (sizeRatio*0.55 + Math.random()*0.45) : Math.random();
+    if(q > 0.93) return 5;
+    if(q > 0.76) return 4;
+    if(q > 0.52) return 3;
+    if(q > 0.24) return 2;
+    return 1;
+  }
+  function gradeStars(g){ return '★'.repeat(g) + '☆'.repeat(5-g); }
+  function gradeBadge(g){
+    const G = GRADES[g] || GRADES[2];
+    return `<span class="chip" style="background:${G.bg};color:${G.color}">${gradeStars(g)} ${g}등급</span>`;
+  }
+  function finalPrice(base, grade){ return Math.max(0, Math.round(base * (GRADES[grade]||GRADES[2]).mult)); }
+
+  /* ---------- deck / views ---------- */
+  const VIEWS = ['idle','wait','reel'];
+  function setView(v){
+    VIEWS.forEach(k=>{
+      const el = document.querySelector(`[data-view="${k}"]`);
+      if(el) el.classList.toggle('is-on', k===v);
+    });
+  }
+  function showIdle(){
+    g.mode='idle'; g.pending=null; g.fight=null;
+    setView('idle');
+    Scene.reset();
+    $('reelHint').textContent = '원형 릴을 손가락으로 빙글빙글 돌려 감아요';
+    renderHeader();
+  }
+  function showWait(){
+    g.mode='waiting'; setView('wait');
+    $('waitHint').textContent = '찌가 잠기는 순간을 기다리는 중…';
+  }
+  function showReel(){
+    setView('reel');
+  }
+
+  /* ---------- fishing flow ---------- */
+  function doCast(){
+    if(g.mode!=='idle') return;
+    Sfx.init(); Sfx.resume();
+    g.mode='casting';
+    setView('wait');
+    Scene.setMode('casting');
+    Scene.cast();
+    S.casts++; save();
+    setTimeout(()=>{
+      if(g.mode!=='casting') return;
+      Scene.setMode('waiting');
+      showWait();
+      const now = performance.now();
+      const delay = 1900 + Math.random()*2600;
+      g.biteAt = now + delay;
+      g.biteUntil = g.biteAt + 1200;
+      g.nibbleAt = now + 700 + Math.random()*900;
+      g.pending = rollEncounter();
+    }, 620);
+  }
+  function nibble(){
+    Scene.nibble(); Sfx.nibble();
+    g.nibbleAt = performance.now() + 600 + Math.random()*1100;
+  }
+  function startFight(){
+    const sp = g.pending || rollEncounter();
+    const fl = FIGHT[sp.fightKey || sp.rarity] || FIGHT.common;
+    const size = rollSize(sp);
+    const sizeRatio = sp.min===sp.max ? 0.6 : (size-sp.min)/Math.max(1,(sp.max-sp.min));
+    const grade = rollGrade(sp, sizeRatio);
+    const rodLv = S.gear.rod, reelLv = S.gear.reel, lineLv = S.gear.line;
+    const dist = sp.dist;
+    const perTurn = (dist/(sp.turns||8)) * (1+0.10*rodLv) * (1+0.15*reelLv) * (0.94+0.12*sizeRatio);
+    g.fight = {
+      sp, size, sizeRatio, grade,
+      perDeg: perTurn/360,
+      pullPerDeg: (fl.pull/360) * (1-0.07*lineLv) * (0.92+0.16*sizeRatio),
+      decay: fl.decay,
+      big: bigCatch(sp)
+    };
+    g.total = dist; g.rem = dist;
+    g.tension = 34; g.dangerT = 0;
+    g.rotRate = 0;
+    g.dangerLimit = 2.0 + 0.25*lineLv;
+    g.lastCrank = performance.now(); g.crankDeg = 0; g.tickAcc = 0;
+    g.mode = 'reel';
+    g.crankTotal = 0;
+    cr.total = 0; rotEl.style.transform = 'rotate(0deg)';
+    Scene.startBite();
+    Scene.setMode('reel'); Scene.startReel(); Scene.setFish(sp); Scene.setGauge(g.tension, 0, false);
+    Sfx.bite(); Sfx.hook();
+    flashBite();
+    const rare = sp.rarity==='legend'||sp.rarity==='junkLegend';
+    $('fightTip').classList.remove('on');
+    say(sp.car ? (sp.art==='ktx' ? '치이익— 뭔가 엄청나게 묵직하다!' : '덜컹! 대어가 아니라 탈것인가?!')
+               : rare ? '전설의 기운이 느껴진다…!' : '입질! 텐션을 보며 감아 올리세요', 2600);
+    showReel();
+  }
+  function flashBite(){
+    const f = $('biteFlash');
+    f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+    setTimeout(()=>f.classList.remove('on'), 700);
+  }
+
+  function applyCrank(deg){
+    if(g.mode!=='reel') return;
+    const dir = deg>0 ? 1 : -1;
+    const nowT = performance.now();
+    if(dir>0){
+      g.rem = Math.max(0, g.rem - g.fight.perDeg*deg);
+      g.crankDeg += deg;
+      const dts = Math.max(0.008, (nowT - g.lastCrank)/1000);
+      const inst = Math.min(2600, deg/dts);
+      g.rotRate = g.rotRate*0.65 + inst*0.35;
+      g.tickAcc += deg;
+      if(g.tickAcc >= 42){ g.tickAcc = 0; Sfx.crank(); }
+    }else{
+      g.rem = Math.min(g.total, g.rem + g.fight.perDeg*Math.abs(deg)*0.35);
+      g.rotRate = Math.max(0, g.rotRate*0.5 - 40);
+    }
+    g.lastCrank = nowT;
+    Scene.crank();
+    updateGauges();
+    if(g.rem <= 0.001) finishCatch();
+  }
+  function updateGauges(){
+    if(g.mode!=='reel') return;
+    const prog = Math.max(0, Math.min(100, (1 - g.rem/g.total)*100));
+    $('progFill').style.width = prog.toFixed(1)+'%';
+    $('progFish').style.left = (2 + prog*0.96).toFixed(1)+'%';
+    $('progVal').textContent = g.rem>=100 ? g.rem.toFixed(0)+' m' : g.rem.toFixed(1)+' m';
+    $('tenMarker').style.left = Math.max(0,Math.min(100,g.tension)).toFixed(1)+'%';
+    $('tenVal').textContent = Math.round(g.tension);
+    const dz = $('tenTrack');
+    dz.classList.toggle('danger', g.tension>=80);
+    $('dangerFill').style.width = Math.min(100,(g.dangerT/g.dangerLimit)*100).toFixed(0)+'%';
+    $('crankTurns').textContent = (g.crankDeg/360).toFixed(1)+'바퀴';
+    Scene.setGauge(g.tension, prog, true);
+    const tip = $('fightTip');
+    if(g.tension>=82){ tip.textContent='위험! 잠깐 손을 멈추세요'; tip.classList.add('on'); tip.classList.remove('calm'); }
+    else if(g.tension<=30){ tip.textContent='천천히 감아도 괜찮아요'; tip.classList.add('on','calm'); }
+    else if(g.rem<=8){ tip.textContent='거의 다 왔어요!'; tip.classList.add('on','calm'); }
+    else tip.classList.remove('on');
+  }
+
+  function tick(now){
+    const dt = Math.min(0.05, (now - (g.lastFrame||now))/1000);
+    g.lastFrame = now;
+
+    if(g.mode==='waiting'){
+      if(g.nibbleAt && now>=g.nibbleAt && now < g.biteAt-400) nibble();
+      if(now>=g.biteAt){
+        g.pending = g.pending || rollEncounter();
+        startFight();
+      }
+    }else if(g.mode==='reel'){
+      const f = g.fight;
+      const active = (now - g.lastCrank) < 200;
+      if(!active) g.rotRate *= Math.pow(0.2, dt);
+      const target = active ? 27 + Math.min(1, g.rotRate/900)*63 : 17;
+      const k = active ? 2.4 : 1.7;
+      g.tension = Math.max(0, Math.min(100, g.tension + (target - g.tension)*Math.min(1, dt*k)));
+      if(g.tension>=80){
+        g.dangerT += dt;
+        if(g.tension>=95) g.dangerT += dt*1.2;
+      }else{
+        g.dangerT = Math.max(0, g.dangerT - dt*1.8);
+      }
+      if(g.tension>82) Sfx.warn();
+      if(g.dangerT >= g.dangerLimit || g.tension>=100.5){
+        lineBreak();
+      }else{
+        if(g.keyHeld){
+          g.keyAcc = (g.keyAcc||0) + 300*dt;
+          if(g.keyAcc >= 1){ const d = Math.floor(g.keyAcc); g.keyAcc -= d; spinCrank(d); }
+        }
+        updateGauges();
+      }
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function lineBreak(){
+    if(g.mode!=='reel') return;
+    g.mode='idle';
+    Scene.fail(); Sfx.lose();
+    $('fightTip').classList.remove('on');
+    $('dangerFill').style.width='0%';
+    const sp = g.fight ? g.fight.sp : null;
+    say('줄이 끊어졌어요… 텐션이 너무 높았어요', 2600);
+    showIdle();
+    g.fight = null;
+  }
+
+  function finishCatch(){
+    if(g.mode!=='reel') return;
+    const f = g.fight; if(!f) return;
+    g.mode='caught';
+    const sp = f.sp, size = f.size;
+    const price = finalPrice(priceOf(sp, size), f.grade);
+    const prev = S.dex[sp.id];
+    const isNew = !prev;
+    const isRecord = !prev || size > prev.max;
+    if(!prev) S.dex[sp.id] = {n:1, max:size, g:f.grade};
+    else { prev.n += 1; if(size>prev.max) prev.max = size; prev.g = Math.max(prev.g||1, f.grade); }
+    S.caught++;
+    currentCatch = {id:sp.id, size, price, grade:f.grade};
+    save();
+    renderDexChip(); renderHeader();
+    const big = bigCatch(sp);
+    Scene.celebrate(sp, big);
+    setTimeout(()=>openCatchModal(sp, size, price, isNew, isRecord, f.grade), 360);
+  }
+
+  /* ---------- catch modal ---------- */
+  function openCatchModal(sp, size, price, isNew, isRecord, grade){
+    const r = rarityOf(sp);
+    $('catchArt').innerHTML = Art.svgFor(sp);
+    $('catchName').textContent = sp.name;
+    let kicker = '포획 성공!';
+    if(sp.car) kicker = sp.art==='ktx' ? '치이익— 심해역 도착!' : '덜컹! 탈것을 낚았다';
+    else if(!isFish(sp)) kicker = '이게 왜 낚였지…?';
+    else if(sp.rarity==='legend') kicker = '전설 포획!';
+    const k = $('catchKicker');
+    k.textContent = kicker;
+    k.classList.toggle('heavy', !!sp.car || r.label.indexOf('전설')>=0);
+    let chips = `<span class="chip rarity" style="background:${r.color}">${r.label}</span>` + gradeBadge(grade);
+    if(isNew) chips += `<span class="chip" style="background:#ffe8e4;color:#c23b2f">NEW 도감</span>`;
+    if(isRecord && !isNew) chips += `<span class="chip" style="background:#fff3d0;color:#9a6a00">최대 기록 갱신</span>`;
+    if(sp.car) chips += `<span class="chip">탈것</span>`;
+    $('catchChips').innerHTML = chips;
+    const sizeTxt = sp.art==='ktx' ? '20,000 cm<br><small style="font-weight:800;color:#8a6100">(200 m)</small>' : (Math.round(size*10)/10)+' cm';
+    $('catchStats').innerHTML = `
+      <div><span>크기</span><b>${sizeTxt}</b></div>
+      <div><span>개체 등급</span><b style="color:${(GRADES[grade]||GRADES[2]).color}">${gradeStars(grade)} ${(GRADES[grade]||GRADES[2]).label}</b></div>
+      <div><span>판매가</span><b>${fmt(price)} G</b></div>
+      <div><span>잡은 횟수</span><b>${S.dex[sp.id]?S.dex[sp.id].n:1}회</b></div>`;
+    $('catchGag').textContent = isFish(sp) ? sp.desc : sp.gag;
+    $('catchSalePrice').textContent = price>0 ? `+${fmt(price)} G` : '0 G';
+    $('catchSellLabel').textContent = price>0 ? '바로 팔기' : '그냥 버리기';
+    $('catchModal').classList.add('is-on');
+  }
+  function closeCatch(){
+    $('catchModal').classList.remove('is-on');
+    currentCatch = null;
+    showIdle();
+  }
+  function keepCatch(){
+    if(!currentCatch) return closeCatch();
+    if(S.inv.length >= 80){
+      let low = 0;
+      for(let i=1;i<S.inv.length;i++) if(S.inv[i].price < S.inv[low].price) low = i;
+      const drop = S.inv.splice(low,1)[0];
+      S.gold += drop.price;
+      toast(`보관함이 가득 차서 ${ALL_BY_ID[drop.id].name}을(를) 자동 판매했어요 (+${fmt(drop.price)} G)`, 2600);
+    }
+    S.inv.push(currentCatch);
+    save(); renderGold(); Sfx.sell();
+    closeCatch();
+  }
+  function sellCatchNow(){
+    if(!currentCatch) return closeCatch();
+    S.gold += currentCatch.price; S.sold++;
+    save(); renderGold(); Sfx.sell();
+    toast(currentCatch.price>0 ? `+${fmt(currentCatch.price)} G · 잘 팔았어요` : '0 G에 팔았어요. 바다가 좋아합니다.', 2200);
+    closeCatch();
+  }
+
+  /* ---------- sheets ---------- */
+  function openSheet(id){
+    if(g.mode==='reel'){ toast('릴링 중에는 열 수 없어요'); return; }
+    if(g.mode==='waiting' || g.mode==='casting'){ toast('입질을 기다리는 중이에요'); return; }
+    document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('is-on'));
+    $(id).classList.add('is-on');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('is-on', t.dataset.sheet===id));
+    if(id==='dexSheet') renderDex();
+    if(id==='shopSheet') renderShop();
+    if(id==='spotSheet') renderSpots();
+    Sfx.ui();
+  }
+  function closeSheets(){
+    document.querySelectorAll('.sheet').forEach(s=>s.classList.remove('is-on'));
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('is-on', t.dataset.tab==='fish'));
+    Sfx.ui();
+  }
+
+  function renderDex(){
+    const fishC = FISH.filter(x=>S.dex[x.id]).length;
+    const junkC = JUNK.filter(x=>S.dex[x.id]).length;
+    $('dexCnt').textContent = `${fishC+junkC}/${FISH_TOTAL+JUNK_TOTAL}`;
+    document.querySelectorAll('#dexSeg button').forEach(b=>{
+      b.classList.toggle('is-on', b.dataset.kind===dexKind);
+      const n = b.dataset.kind==='fish' ? fishC : junkC;
+      const t = b.dataset.kind==='fish' ? FISH_TOTAL : JUNK_TOTAL;
+      b.innerHTML = `${b.dataset.kind==='fish'?'물고기':'병맛·탈것'} <b>${n}/${t}</b>`;
+    });
+    const gridHtml = (sp)=>{
+      const d = S.dex[sp.id];
+      const r = rarityOf(sp);
+      if(!d){
+        return `<button class="dcard locked" data-dex="${sp.id}">
+          <div class="art" style="display:grid;place-items:center;font-size:26px;color:#c3d3dc">?</div>
+          <div class="nm">???</div><div class="rr" style="color:#b6c7d1">${r.label}</div></button>`;
+      }
+      return `<button class="dcard" data-dex="${sp.id}">
+        <div class="art">${Art.svgFor(sp)}</div>
+        <div class="nm">${escapeHtml(sp.name)}</div>
+        <div class="rr" style="color:${r.color}">${r.label} · ${fmt(d.max)}cm</div>
+        <div class="gbadge" style="color:${(GRADES[d.g||2]||GRADES[2]).color}">${gradeStars(d.g||2)}</div></button>`;
+    };
+    if(dexKind==='fish'){
+      let html = '';
+      SPOTS.forEach(spot=>{
+        const list = FISH.filter(f=>f.spot===spot.id);
+        const got = list.filter(f=>S.dex[f.id]).length;
+        html += `<div class="spot-group"><h3><i class="bar"></i>${spot.name} <small>${got}/${list.length}</small></h3>
+          <div class="grid">${list.map(gridHtml).join('')}</div></div>`;
+      });
+      html += `<p class="footnote">도감 총 ${FISH_TOTAL}종 · 병맛·탈것 ${JUNK_TOTAL}종<br>물고기가 메인, 가끔 병맛이 낚입니다 (약 16%)</p>`;
+      $('dexGrid').innerHTML = html;
+    }else{
+      const html = `<div class="spot-group"><h3><i class="bar"></i>병맛 · 탈것 <small>${junkC}/${JUNK_TOTAL}</small></h3>
+        <div class="grid">${JUNK.map(gridHtml).join('')}</div></div>
+        <p class="footnote">0 G짜리도 있고, KTX처럼 대박인 것도 있습니다.<br>탈것은 릴링이 묵직하게 걸립니다.</p>`;
+      $('dexGrid').innerHTML = html;
+    }
+  }
+
+  function renderGear(){
+    let html = `<div class="shopHead"><div><b>장비 업그레이드</b><br><span>낚싯대 · 릴 · 줄 · 미끼</span></div>
+      <div style="text-align:right"><b>${fmt(S.gold)} G</b><br><span>보유 골드</span></div></div>`;
+    Object.keys(GEAR).forEach(k=>{
+      const G = GEAR[k], lv = S.gear[k]||0, max = lv>=G.max, cost = gearCost(k);
+      const can = !max && S.gold>=cost;
+      html += `<div class="eqcard">
+        <div class="eqicon">${G.icon}</div>
+        <div class="eqbody">
+          <h4>${G.name} <em>Lv.${lv}</em></h4>
+          <p>${G.desc}</p>
+          <div class="pips">${[0,1,2,3,4].map(i=>`<i class="${i<lv?'on':''}"></i>`).join('')}</div>
+        </div>
+        <button class="buyBtn ${max?'max':''}" data-buy="${k}" ${max?'disabled':''} ${can?'':'disabled'}>
+          ${max?'MAX':`${fmt(cost)} G`}<small>${max?'완료':(can?'업그레이드':'골드 부족')}</small>
+        </button>
+      </div>`;
+    });
+    html += `<p class="footnote">낚싯대·릴은 감는 효율을, 낚싯줄은 텐션을, 미끼는 희귀·전설 확률을 올려요.</p>`;
+    $('shopBody').innerHTML = html;
+  }
+
+  function renderSell(){
+    const total = S.inv.reduce((a,b)=>a+(b.price||0),0);
+    let html = `<div class="shopHead"><div><b>보관함 ${S.inv.length}개</b><br><span>합계 ${fmt(total)} G</span></div>
+      <button class="sellAll" id="sellAllBtn" ${S.inv.length?'':'disabled'} style="${S.inv.length?'':'opacity:.45'}">전체 판매</button></div>`;
+    if(!S.inv.length){
+      html += `<div class="empty">보관함이 비어 있어요.<br>낚시해서 물고기를 모아 보세요.</div>`;
+    }else{
+      html += S.inv.map((it,i)=>{
+        const sp = ALL_BY_ID[it.id]; if(!sp) return '';
+        return `<div class="invrow">
+          <div class="art">${Art.svgFor(sp)}</div>
+          <div class="meta"><b>${escapeHtml(sp.name)}</b><span>${sp.art==='ktx'?'20,000cm':Math.round(it.size*10)/10+'cm'} · <b style="color:${(GRADES[it.grade||2]||GRADES[2]).color}">★${it.grade||2}</b> · ${rarityOf(sp).label}</span></div>
+          <div class="price">${fmt(it.price)} G</div>
+          <button class="sellOne" data-sell="${i}">팔기</button>
+        </div>`;
+      }).join('');
+    }
+    html += `<p class="footnote">한 마리씩 팔거나 전체 판매할 수 있어요. 장비 업그레이드에 골드를 쓰세요.</p>`;
+    $('shopBody').innerHTML = html;
+  }
+
+  function renderShop(){
+    document.querySelectorAll('#shopSeg button').forEach(b=>b.classList.toggle('is-on', b.dataset.shop===shopTab));
+    if(shopTab==='gear') renderGear(); else renderSell();
+  }
+
+  function renderSpots(){
+    let html = `<div class="sheet-head" style="padding:0 0 10px;border:0;background:none">
+      <h2>낚시터 <span class="cnt">${S.unlocked.length}/${SPOTS.length} 해금</span></h2></div>`;
+    SPOTS.forEach(sp=>{
+      const unlocked = S.unlocked.includes(sp.id);
+      const cur = S.spot===sp.id;
+      const can = S.gold >= sp.cost;
+      html += `<button class="spotrow ${unlocked?'':'locked'} ${cur?'cur':''}" data-spot="${sp.id}">
+        <div class="art" style="background:linear-gradient(145deg,${sp.color1},${sp.color2});color:#fff">${sp.icon}</div>
+        <div class="meta"><b>${sp.name}</b><span>${sp.desc}</span></div>
+        <div class="tail">${cur?'낚시 중':''
+          }${!unlocked?`<span style="color:#9a6a00">${fmt(sp.cost)} G</span><small>해금</small>`:''}${unlocked&&!cur?'<span style="color:#0b7f7d">선택</span><small>이동</small>':''}</div>
+      </button>`;
+    });
+    html += `<p class="footnote">낚시터마다 나오는 물고기와 병맛 아이템이 달라요.<br>심해에는 KTX가 있다는 소문이…</p>`;
+    $('spotList').innerHTML = html;
+  }
+
+  function buyGear(k){
+    const lv = S.gear[k]||0;
+    if(lv>=GEAR.max){ toast('이미 최대로 업그레이드했어요'); return; }
+    const cost = gearCost(k);
+    if(S.gold < cost){ toast(`골드가 ${fmt(cost-S.gold)} G 부족해요`); return; }
+    S.gold -= cost; S.gear[k] = lv+1; save();
+    Sfx.buy(); renderGold(); renderGear(); renderHeader();
+    toast(`${GEAR[k].name} Lv.${lv+1} 업그레이드 완료!`);
+  }
+
+  function sellAll(){
+    if(!S.inv.length) return;
+    const total = S.inv.reduce((a,b)=>a+(b.price||0),0);
+    const n = S.inv.length;
+    S.gold += total; S.sold += n; S.inv = []; save();
+    Sfx.sell(); renderGold(); renderSell(); renderHeader();
+    toast(`${n}개 판매 완료 · +${fmt(total)} G`, 2400);
+  }
+
+  function selectSpot(id){
+    const sp = SPOTS.find(x=>x.id===id); if(!sp) return;
+    if(S.unlocked.includes(id)){
+      S.spot = id; save(); renderSpot(); renderSpots(); Scene.setSpot(id);
+      toast(`${sp.name}로 이동했어요`);
+      closeSheets();
+      return;
+    }
+    if(S.gold < sp.cost){ toast(`해금에 ${fmt(sp.cost-S.gold)} G가 더 필요해요`); return; }
+    S.gold -= sp.cost; S.unlocked.push(id); S.spot = id; save();
+    Sfx.unlock(); renderGold(); renderSpot(); Scene.setSpot(id); renderHeader();
+    toast(`${sp.name} 해금! 새로운 물고기를 만나러 가요`, 2600);
+    closeSheets();
+  }
+
+  /* ---------- crank ---------- */
+  const crankEl = $('crank'), rotEl = $('crankRot');
+  const cr = {active:false, last:0, total:0};
+  function angleAt(e){
+    const r = crankEl.getBoundingClientRect();
+    return Math.atan2(e.clientY-(r.top+r.height/2), e.clientX-(r.left+r.width/2))*180/Math.PI;
+  }
+  function spinCrank(deg){
+    if(g.mode!=='reel') return;
+    cr.total += deg;
+    rotEl.style.transform = `rotate(${cr.total.toFixed(1)}deg)`;
+    applyCrank(deg);
+  }
+  crankEl.addEventListener('pointerdown', e=>{
+    if(g.mode!=='reel'){ return; }
+    e.preventDefault();
+    Sfx.init(); Sfx.resume();
+    cr.active = true; cr.last = angleAt(e); cr.total = cr.total||0;
+    crankEl.classList.add('turning');
+    try{ crankEl.setPointerCapture(e.pointerId); }catch(_){}
+  });
+  crankEl.addEventListener('pointermove', e=>{
+    if(!cr.active || g.mode!=='reel') return;
+    e.preventDefault();
+    const a = angleAt(e);
+    let d = a - cr.last;
+    while(d>180) d-=360;
+    while(d<-180) d+=360;
+    cr.last = a;
+    if(Math.abs(d) > 80) return;
+    spinCrank(d);
+  });
+  function endCrank(){
+    if(!cr.active) return;
+    cr.active = false;
+    crankEl.classList.remove('turning');
+  }
+  crankEl.addEventListener('pointerup', endCrank);
+  crankEl.addEventListener('pointercancel', endCrank);
+  crankEl.addEventListener('pointerleave', e=>{ if(cr.active && e.pointerType==='mouse' && e.buttons===0) endCrank(); });
+  window.addEventListener('blur', ()=>{ endCrank(); g.keyHeld=false; });
+
+  /* keyboard assist */
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'){
+      e.preventDefault();
+      if(g.mode==='idle'){ doCast(); return; }
+      if(g.mode==='reel'){ Sfx.init(); Sfx.resume(); g.keyHeld = true; }
+    }
+    if(e.code==='Escape'){
+      document.querySelectorAll('.modal.is-on').forEach(m=>{ if(m.id!=='nickModal') m.classList.remove('is-on'); });
+      closeSheets();
+    }
+  });
+  window.addEventListener('keyup', e=>{ if(e.code==='Space') g.keyHeld=false; });
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ g.keyHeld=false; endCrank(); saveNow(); } });
+
+  /* ---------- events ---------- */
+  $('castBtn').addEventListener('click', doCast);
+  $('waitCancel').addEventListener('click', ()=>{
+    if(g.mode!=='waiting' && g.mode!=='casting') return;
+    g.mode='idle'; g.pending=null; Scene.reset(); showIdle(); say('줄을 회수했어요');
+  });
+  $('spotChip').addEventListener('click', ()=>openSheet('spotSheet'));
+  $('dexChip').addEventListener('click', ()=>openSheet('dexSheet'));
+  $('muteBtn').addEventListener('click', ()=>{
+    S.muted = !S.muted; Sfx.init(); Sfx.setMuted(S.muted); renderMute(); save();
+    if(!S.muted) Sfx.ui();
+  });
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.addEventListener('click', ()=>{ if(t.dataset.tab==='fish') closeSheets(); else openSheet(t.dataset.sheet); });
+  });
+  document.querySelectorAll('[data-close]').forEach(b=>{
+    b.addEventListener('click', ()=>closeSheets());
+  });
+  $('dexSeg').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-kind]'); if(!b) return;
+    dexKind = b.dataset.kind; renderDex(); Sfx.ui();
+  });
+  $('shopSeg').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-shop]'); if(!b) return;
+    shopTab = b.dataset.shop; renderShop(); Sfx.ui();
+  });
+  $('dexGrid').addEventListener('click', e=>{
+    const b = e.target.closest('[data-dex]'); if(!b) return;
+    const sp = ALL_BY_ID[b.dataset.dex]; const d = S.dex[sp.id];
+    if(!d){ toast('아직 잡지 못한 도감이에요'); return; }
+    openDetail(sp); Sfx.ui();
+  });
+  $('shopBody').addEventListener('click', e=>{
+    const buy = e.target.closest('[data-buy]');
+    if(buy){ buyGear(buy.dataset.buy); return; }
+    if(e.target.closest('#sellAllBtn')){ sellAll(); return; }
+    const sell = e.target.closest('[data-sell]');
+    if(sell){
+      const i = Number(sell.dataset.sell);
+      const it = S.inv[i]; if(!it) return;
+      const sp = ALL_BY_ID[it.id];
+      S.gold += it.price||0; S.inv.splice(i,1); S.sold++; save();
+      Sfx.sell(); renderGold(); renderSell(); renderHeader();
+      toast(`${sp?sp.name:'아이템'} 판매 · +${fmt(it.price||0)} G`);
+    }
+  });
+  $('spotList').addEventListener('click', e=>{
+    const b = e.target.closest('[data-spot]'); if(!b) return;
+    selectSpot(b.dataset.spot);
+  });
+  $('catchSell').addEventListener('click', sellCatchNow);
+  $('catchKeep').addEventListener('click', keepCatch);
+  $('detailClose').addEventListener('click', ()=>$('detailModal').classList.remove('is-on'));
+  document.querySelectorAll('.modal').forEach(m=>{
+    m.addEventListener('click', e=>{ if(e.target===m && m.id!=='nickModal' && m.id!=='catchModal') m.classList.remove('is-on'); });
+  });
+
+  function openDetail(sp){
+    const r = rarityOf(sp);
+    const d = S.dex[sp.id];
+    $('detailArt').innerHTML = Art.svgFor(sp);
+    $('detailName').textContent = sp.name;
+    let chips = `<span class="chip rarity" style="background:${r.color}">${r.label}</span>`;
+    if(sp.spot) chips += `<span class="chip">${SPOTS.find(x=>x.id===sp.spot).name}</span>`;
+    if(sp.car) chips += `<span class="chip">탈것</span>`;
+    $('detailChips').innerHTML = chips;
+    $('detailDesc').textContent = isFish(sp) ? sp.desc : sp.gag;
+    $('detailStats').innerHTML = `
+      <div><span>최고 등급</span><b style="color:${(GRADES[d.g||2]||GRADES[2]).color}">${gradeStars(d.g||2)} ${(GRADES[d.g||2]||GRADES[2]).label}</b></div>
+      <div><span>최대 기록</span><b>${Number.isInteger(d.max)?fmt(d.max):(Math.round(d.max*10)/10)} cm</b></div>
+      <div><span>잡은 횟수</span><b>${d.n}회</b></div>
+      <div><span>기본 판매가</span><b>${fmt(sp.price)} G</b></div>`;
+    $('detailModal').classList.add('is-on');
+  }
+
+  /* ---------- boot ---------- */
+  $('nickStart').addEventListener('click', ()=>{
+    const v = $('nickInput').value.trim();
+    if(!v){ $('nickInput').focus(); $('nickErr').textContent = '닉네임을 입력해 주세요 (1~10자)'; return; }
+    S.nick = v.slice(0,10); saveNow();
+    Sfx.init(); Sfx.resume(); Sfx.ui();
+    $('nickModal').classList.remove('is-on');
+    renderHeader();
+  });
+  $('nickInput').addEventListener('keydown', e=>{ if(e.key==='Enter') $('nickStart').click(); });
+
+  Scene.init($('scene'));
+  Scene.setSpot(S.spot);
+  Sfx.setMuted(!!S.muted);
+  renderHeader(); renderMute();
+  $('muteBtn').textContent = S.muted ? '🔇' : '🔊';
+  if(S.nick){
+    $('nickInput').value = S.nick;
+  }else{
+    $('nickModal').classList.add('is-on');
+  }
+  document.addEventListener('pointerdown', function once(){ Sfx.init(); Sfx.resume(); document.removeEventListener('pointerdown', once); });
+  window.addEventListener('resize', ()=>Scene.resize());
+  window.addEventListener('orientationchange', ()=>setTimeout(()=>Scene.resize(), 120));
+  requestAnimationFrame(tick);
+  saveNow();
+})();
+</script>
+</body>
+</html>
