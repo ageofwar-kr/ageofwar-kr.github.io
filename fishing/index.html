@@ -180,11 +180,11 @@ input{font-family:inherit}
 .cg-zone{position:absolute;top:0;bottom:0;display:block}
 .cg-zone.g1,.cg-zone.g2{background:linear-gradient(180deg,#eaf1f6,#e2ebf2)}
 .cg-zone.good{background:linear-gradient(180deg,#d8f5e7,#bdeacf)}
-.cg-zone.good.l{left:28%;width:17.5%}
-.cg-zone.perfect{left:45.5%;width:9%;background:linear-gradient(180deg,#ffeaa6,#f3c02c);
+.cg-zone.good.l{left:26%;width:16.5%}
+.cg-zone.perfect{left:42.5%;width:15%;background:linear-gradient(180deg,#ffeaa6,#f3c02c);
   box-shadow:0 0 12px rgba(243,192,44,.75)}
-.cg-zone.good.r{left:54.5%;width:17.5%}
-.cg-zone.g2{left:72%;width:28%}
+.cg-zone.good.r{left:57.5%;width:16.5%}
+.cg-zone.g2{left:74%;width:26%}
 .cg-needle{position:absolute;top:-3px;bottom:-3px;width:4px;margin-left:-2px;border-radius:3px;
   background:#123246;box-shadow:0 0 0 2px #fff,0 2px 8px rgba(0,0,0,.22);will-change:left}
 .cg-needle.perfect{background:#b9790a;box-shadow:0 0 0 2px #fff,0 0 15px rgba(243,192,44,.95)}
@@ -2677,7 +2677,7 @@ const Scene = (function(){
   const JUNK_CHANCE = 0.16;
 
   /* 캐스팅 파워 게이지 구간 (%) */
-  const CAST = { sweep: 950, perfectLo: 45.5, perfectHi: 54.5, goodLo: 28, goodHi: 72 };
+  const CAST = { sweep: 1150, perfectLo: 42.5, perfectHi: 57.5, goodLo: 26, goodHi: 74 };
   const ARC = 2 * Math.PI * 54, ARC2 = 2 * Math.PI * 47;
   const LINE_PRICE = 10;
   const DEFAULT_LINES = 3;
