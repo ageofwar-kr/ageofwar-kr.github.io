@@ -325,7 +325,7 @@ input{font-family:inherit}
     <canvas id="scene"></canvas>
     <div class="stage-ui">
       <button class="spot-chip" id="spotChip"><span id="spotName">맑은 강가</span><i>▾</i></button>
-      <div class="dex-chip" id="dexChip">도감 <b id="dexCount">0</b><span id="dexTotal">/78</span></div>
+      <div class="dex-chip" id="dexChip">도감 <b id="dexCount">0</b><span id="dexTotal">/79</span></div>
     </div>
     <div class="stage-msg" id="stageMsg"></div>
     <div class="bite-flash" id="biteFlash"><span>!</span></div>
@@ -381,7 +381,7 @@ input{font-family:inherit}
 
   <!-- 도감 -->
   <div class="sheet" id="dexSheet">
-    <div class="sheet-head"><h2>도감 <span class="cnt" id="dexCnt">0/78</span></h2>
+    <div class="sheet-head"><h2>도감 <span class="cnt" id="dexCnt">0/79</span></h2>
       <button class="closeBtn" data-close aria-label="닫기">✕</button></div>
     <div class="seg" id="dexSeg">
       <button class="is-on" data-kind="fish">물고기</button>
@@ -581,6 +581,9 @@ const FISH = [
   {id:'sumeong', name:'숭어', spot:'sea', rarity:'uncommon', min:30, max:70, dist:30, price:70,
    shape:'slim', tail:'fork', pattern:'stripe', c1:'#9aa8ac', c2:'#f4f8f8', fin:'#b3c0c3', pat:'#5f6f73', extras:[],
    desc:'물 위로 팔짝 뛰어오르는 곡예사. 놀라서 줄을 놓치지 말 것.'},
+  {id:'doldom', name:'돌돔', spot:'sea', rarity:'rare', min:25, max:55, dist:34, price:240,
+   shape:'round', tail:'fan', pattern:'band', c1:'#5a5f4a', c2:'#d9dcc4', fin:'#767c5f', pat:'#2e3222', extras:[],
+   desc:'돌 틈을 좋아하는 줄무늬 도미. 이빨이 단단해 미끼를 잘 끊는다.'},
   {id:'chamdom', name:'참돔', spot:'sea', rarity:'rare', min:35, max:78, dist:38, price:220,
    shape:'oval', tail:'fork', pattern:'spot', c1:'#e07b8a', c2:'#ffe8ec', fin:'#e89aa6', pat:'#5b7fd0', extras:[],
    desc:'붉은 몸에 파란 점이 박힌 바다의 귀빈. 도착하면 경례가 나온다.'},
@@ -728,10 +731,10 @@ const JUNK = [
   {id:'sedan', name:'세월을 품은 세단', spots:['sea','offshore'], rarity:'junkGood', min:460, max:500, price:900,
    art:'sedan', weight:4.5, fightKey:'car', dist:42, turns:10, car:true,
    gag:'1980년대의 향기가 물씬 난다. 라디오에서는 아직 카세트가 돌아간다.'},
-  {id:'luxury', name:'심해에 잠든 고급세단', spots:['offshore'], rarity:'junkRare', min:500, max:540, price:1900,
+  {id:'luxury', name:'먼바다에 잠든 고급세단', spots:['offshore'], rarity:'junkRare', min:500, max:540, price:1900,
    art:'luxury', weight:2.6, fightKey:'carLux', dist:52, turns:12, car:true,
    gag:'가죽 시트는 아직 촉촉하다. 시동은 안 걸리지만 품위는 살아 있다.'},
-  {id:'truck', name:'심해로 간 1톤 트럭', spots:['offshore','deep'], rarity:'junkRare', min:480, max:540, price:1500,
+  {id:'truck', name:'바다로 간 1톤 트럭', spots:['offshore','deep'], rarity:'junkRare', min:480, max:540, price:1500,
    art:'truck', weight:3, fightKey:'truck', dist:58, turns:13, car:true,
    gag:'짐칸에는 짐 대신 물고기가 가득하다. 배송은 영영 완료되지 않았다.'},
   {id:'bigtruck', name:'심해 대형 덤프트럭', spots:['deep'], rarity:'junkLegend', min:800, max:900, price:5000,
