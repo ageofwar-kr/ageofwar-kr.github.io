@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>낚시의 손맛 v1.1 — 드카게임즈</title>
-<meta name="description" content="찌를 던지고, 캐스팅 타이밍을 맞추고, 원형 릴을 돌려 텐션과 발악을 버티며 물고기를 끌어올리는 손맛 낚시 게임. 물고기 78종과 병맛 잡동사니·탈것 37종, 총 115종을 모아 보세요. 드카게임즈 v1.1">
-<meta property="og:title" content="낚시의 손맛 v1.1 — 드카게임즈">
+<title>낚시의 손맛 v1.2 — 드카게임즈</title>
+<meta name="description" content="찌를 던지고, 캐스팅 타이밍을 맞추고, 원형 릴을 돌려 텐션과 발악을 버티며 물고기를 끌어올리는 손맛 낚시 게임. 물고기 78종과 병맛 잡동사니·탈것 37종, 총 115종을 모아 보세요. 드카게임즈 v1.2">
+<meta property="og:title" content="낚시의 손맛 v1.2 — 드카게임즈">
 <meta property="og:description" content="캐스팅 타이밍 → 챔질 → 발악 버티기. 심해에는 KTX가 산다는 소문이…">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#0f9b98">
@@ -492,6 +492,16 @@ input{font-family:inherit}
 .invrow .price{font-size:11.5px;font-weight:900;color:#9a6a00;margin-right:2px;white-space:nowrap}
 .sellOne{width:44px;height:30px;border-radius:9px;background:#f0faf9;color:var(--teal-d);font-size:10.5px;font-weight:900;flex:0 0 auto}
 .footnote{text-align:center;font-size:10px;color:#a3b7c3;font-weight:700;line-height:1.6;padding:16px 10px 4px}
+.footnote .credit{display:block;margin-top:4px;font-size:8.5px;color:#b8c8d2;font-weight:700;letter-spacing:-.1px}
+
+/* KTX 실사 사진 (SVG 대신 photo) */
+img.ph{display:block;width:100%;height:100%;object-fit:cover;object-position:62% 55%;
+  border-radius:14px;background:#eef3f6;box-shadow:0 2px 8px rgba(12,45,62,.14)}
+.dcard .art img.ph{height:46px;border-radius:9px;box-shadow:0 1px 4px rgba(12,45,62,.12)}
+.catch .art img.ph{height:132px;border-radius:15px;position:relative;z-index:1;
+  box-shadow:0 8px 20px rgba(10,40,60,.22)}
+.detail .art img.ph{height:120px;border-radius:15px;box-shadow:0 6px 16px rgba(10,40,60,.18)}
+.invrow .art img.ph{width:52px;height:36px;border-radius:8px;box-shadow:0 1px 4px rgba(12,45,62,.12)}
 
 /* spot sheet */
 .spotrow{display:flex;align-items:center;gap:11px;width:100%;background:#fff;border:1px solid var(--line);
@@ -530,7 +540,7 @@ input{font-family:inherit}
     <div class="brand">
       <div class="logo">🎣</div>
       <div class="brandTx">
-        <h1>낚시의 손맛 <span class="ver">v1.1</span></h1>
+        <h1>낚시의 손맛 <span class="ver">v1.2</span></h1>
         <p>드카게임즈</p>
       </div>
     </div>
@@ -668,7 +678,7 @@ input{font-family:inherit}
   <div class="modal" id="nickModal">
     <div class="card nick">
       <div class="art">🎣</div>
-      <h2>낚시의 손맛 <span>v1.1</span></h2>
+      <h2>낚시의 손맛 <span>v1.2</span></h2>
       <p class="sub">드카게임즈 · 낚시꾼 이름을 정해 주세요</p>
       <input class="nickInput" id="nickInput" maxlength="10" placeholder="닉네임 (최대 10자)" autocomplete="off" value="">
       <p class="tiny" id="nickErr"></p>
@@ -2681,9 +2691,11 @@ const Scene = (function(){
   const ARC = 2 * Math.PI * 54, ARC2 = 2 * Math.PI * 47;
   const LINE_PRICE = 10;
   const DEFAULT_LINES = 3;
+  /* KTX 사진 미리 받아 두기 (포획 팝업이 바로 뜨도록) */
+  try{ const _ktxPre = new Image(); _ktxPre.src = 'ktx.jpg'; }catch(e){}
 
   const DEFAULT = {
-    ver:'1.1', nick:'', gold:200, spot:'river', unlocked:['river'],
+    ver:'1.2', nick:'', gold:200, spot:'river', unlocked:['river'],
     gear:{rod:0,reel:0,line:0,bait:0}, lines:3,
     dex:{}, inv:[], muted:false, casts:0, caught:0, sold:0, plays:0, perfects:0
   };
@@ -2703,7 +2715,7 @@ const Scene = (function(){
       if(!SPOTS.some(x=>x.id===s.spot && s.unlocked.includes(x.id))) s.spot='river';
       s.gold = Math.max(0, Number(s.gold)||0);
       s.lines = (d && d.lines!==undefined) ? Math.max(0, Math.floor(Number(d.lines)||0)) : DEFAULT_LINES;
-      s.ver = '1.1';
+      s.ver = '1.2';
       return s;
     }catch(e){ return JSON.parse(JSON.stringify(DEFAULT)); }
   }
@@ -2744,6 +2756,13 @@ const Scene = (function(){
   }
   function rarityOf(sp){ return RARITY[sp.rarity] || RARITY.common; }
   function isFish(sp){ return !sp.art; }
+  /* KTX만 SVG 일러스트 대신 실사 사진으로 그린다 */
+  const PHOTO_ART = {ktx:'ktx.jpg'};
+  function artHtml(sp){
+    const src = sp && PHOTO_ART[sp.art];
+    if(src) return `<img class="ph" src="${src}" alt="${escapeHtml(sp.name)} 실사 사진" loading="lazy" decoding="async" draggable="false">`;
+    return Art.svgFor(sp);
+  }
   function bigCatch(sp){ return sp.rarity==='legend' || sp.rarity==='junkLegend' || (sp.price>=1000) || !!sp.car; }
   function gearCost(k){ const lv=S.gear[k]||0; return lv>=GEAR.max?0:(GEAR_COST[k][lv]||0); }
   function gearEffect(k, lv){
@@ -3238,7 +3257,7 @@ const Scene = (function(){
     const r = rarityOf(sp);
     const card = $('catchCard');
     card.className = 'card catch rare-' + sp.rarity;
-    $('catchArt').innerHTML = Art.svgFor(sp);
+    $('catchArt').innerHTML = artHtml(sp);
     $('catchName').textContent = sp.name;
     let kicker = '포획 성공!';
     if(sp.car) kicker = sp.art==='ktx' ? '치이익— 심해역 도착!' : '덜컹! 탈것을 낚았다';
@@ -3328,7 +3347,7 @@ const Scene = (function(){
           <div class="nm">???</div><div class="rr" style="color:#b6c7d1">${r.label}</div></button>`;
       }
       return `<button class="dcard r-${sp.rarity}" data-dex="${sp.id}">
-        <div class="art">${Art.svgFor(sp)}</div>
+        <div class="art">${artHtml(sp)}</div>
         <div class="nm">${escapeHtml(sp.name)}</div>
         <div class="rr" style="color:${r.color}">${r.label} · ${fmt(d.max)}cm</div>
         <div class="gbadge" style="color:${(GRADES[d.g||2]||GRADES[2]).color}">${gradeStars(d.g||2)}</div></button>`;
@@ -3346,7 +3365,7 @@ const Scene = (function(){
     }else{
       const html = `<div class="spot-group"><h3><i class="bar"></i>병맛 · 탈것 <small>${junkC}/${JUNK_TOTAL}</small></h3>
         <div class="grid">${JUNK.map(gridHtml).join('')}</div></div>
-        <p class="footnote">0 G짜리도 있고, KTX처럼 대박인 것도 있습니다.<br>탈것은 릴링이 묵직하게 걸립니다.</p>`;
+        <p class="footnote">0 G짜리도 있고, KTX처럼 대박인 것도 있습니다.<br>탈것은 릴링이 묵직하게 걸립니다.<span class="credit">KTX 사진: Minseong Kim / Wikimedia Commons (CC BY-SA 4.0)</span></p>`;
       $('dexGrid').innerHTML = html;
     }
   }
@@ -3395,7 +3414,7 @@ const Scene = (function(){
       html += S.inv.map((it,i)=>{
         const sp = ALL_BY_ID[it.id]; if(!sp) return '';
         return `<div class="invrow">
-          <div class="art">${Art.svgFor(sp)}</div>
+          <div class="art">${artHtml(sp)}</div>
           <div class="meta"><b>${escapeHtml(sp.name)}</b><span>${sp.art==='ktx'?'20,000cm':Math.round(it.size*10)/10+'cm'} · <b style="color:${(GRADES[it.grade||2]||GRADES[2]).color}">★${it.grade||2}</b> · ${rarityOf(sp).label}</span></div>
           <div class="price">${fmt(it.price)} G</div>
           <button class="sellOne" data-sell="${i}">팔기</button>
@@ -3591,7 +3610,7 @@ const Scene = (function(){
   function openDetail(sp){
     const r = rarityOf(sp);
     const d = S.dex[sp.id];
-    $('detailArt').innerHTML = Art.svgFor(sp);
+    $('detailArt').innerHTML = artHtml(sp);
     $('detailName').textContent = sp.name;
     let chips = `<span class="chip rarity" style="background:${r.color}">${r.label}</span>`;
     if(sp.spot) chips += `<span class="chip">${SPOTS.find(x=>x.id===sp.spot).name}</span>`;
