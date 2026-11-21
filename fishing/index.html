@@ -1998,7 +1998,7 @@ const Scene = (function(){
     if(junkList.length && Math.random() < JUNK_CHANCE){
       return pickWeighted(junkList, j=>{
         let w = j.weight;
-        if(j.rarity==='junkGood' || j.rarity==='junkRare' || j.rarity==='junkLegend') w *= (1 + 0.20*S.gear.bait);
+        if(j.rarity==='junkGood' || j.rarity==='junkRare' || j.rarity==='junkLegend') w *= (1 + 0.35*S.gear.bait);
         return w;
       });
     }
@@ -2189,7 +2189,7 @@ const Scene = (function(){
       const active = (now - g.lastCrank) < 200;
       if(!active) g.rotRate *= Math.pow(0.2, dt);
       const target = active ? 27 + Math.min(1, g.rotRate/900)*63 : 17;
-      const k = active ? 2.4 * (1 - 0.06*S.gear.line) : 1.7;
+      const k = active ? 2.4 * (1 - 0.07*S.gear.line) : 1.7;
       g.tension = Math.max(0, Math.min(100, g.tension + (target - g.tension)*Math.min(1, dt*k)));
       if(g.tension>=80){
         g.dangerT += dt;
